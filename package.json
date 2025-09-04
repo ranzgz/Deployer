@@ -1,0 +1,20 @@
+{
+  "name": "fishnemo-deployer",
+  "version": "1.0.0",
+  "description": "One-click deployer to Vercel with custom domains.",
+  "main": "index.html",
+  "scripts": {
+    "start": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "formidable": "^3.5.1",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "vercel": "^32.5.3"
+  }
+}

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <!-- Optional: For icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
@@ -34,7 +34,7 @@
                     <input type="file" id="file-input" multiple hidden>
                 </div>
                 <div id="file-list-container">
-                    <h3>Uploaded Files:</h3>
+                    <h3>Project Files:</h3>
                     <ul id="file-list">
                         <!-- File items will be injected here by JS -->
                     </ul>
@@ -45,14 +45,13 @@
             <div class="step-card" id="step2">
                 <h2><span class="step-number">2</span> Configure Your Domain</h2>
                 <div class="form-group">
-                    <label for="subdomain-name">Choose a Subdomain Name</label>
+                    <label for="subdomain-name">Choose a Project Name (Subdomain)</label>
                     <input type="text" id="subdomain-name" placeholder="e.g., my-awesome-project" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="domain-select">Select a Domain</label>
                     <select id="domain-select">
                         <option value="">Loading domains...</option>
-                        <!-- Domain options will be injected here by JS -->
                     </select>
                 </div>
                 <div class="url-preview">
@@ -63,22 +62,21 @@
 
             <!-- Step 3: Deploy -->
             <div class="step-card" id="step3">
-                 <h2><span class="step-number">3</span> Deploy & Create Subdomain</h2>
+                 <h2><span class="step-number">3</span> Launch Your Website</h2>
                  <p class="info-text">
-                    This will create a CNAME record pointing to Vercel. After clicking deploy, upload your files to a Vercel project and add your new custom domain in the Vercel project settings.
+                    Ready to go live? Clicking deploy will automatically upload your files to Vercel and connect your chosen domain.
                  </p>
-                 <button id="deploy-btn" class="deploy-button">
-                    <span class="button-text">Create Subdomain</span>
+                 <button id="deploy-btn" class="deploy-button" disabled>
+                    <span class="button-text">Deploy Project</span>
                     <div class="loader" hidden></div>
                 </button>
                  <div id="status-message">
-                    <!-- Status messages will appear here -->
                  </div>
             </div>
         </main>
 
         <footer>
-            <p>&copy; 2025 FishNemo - Deployer. Built with ❤️</p>
+            <p>&copy; 2023 FishNemo - Deployer. Built with ❤️</p>
         </footer>
     </div>
 

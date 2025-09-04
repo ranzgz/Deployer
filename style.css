@@ -99,7 +99,6 @@ header p {
     font-weight: 600;
 }
 
-/* Drop Zone */
 .drop-zone {
     border: 2px dashed var(--border-color);
     border-radius: 8px;
@@ -148,7 +147,6 @@ header p {
     border-color: #4f46e5;
 }
 
-/* File List */
 #file-list-container {
     margin-top: 20px;
 }
@@ -175,7 +173,6 @@ header p {
     animation: fadeInList 0.5s ease forwards;
 }
 
-/* Form Elements */
 .form-group {
     margin-bottom: 20px;
 }
@@ -224,7 +221,6 @@ input[type="text"]:focus, select:focus {
     color: var(--success-color);
 }
 
-/* Deploy Button */
 .info-text {
     color: var(--secondary-text-color);
     font-size: 0.9rem;
@@ -247,26 +243,32 @@ input[type="text"]:focus, select:focus {
     font-weight: 600;
     font-family: var(--font-family);
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.3s;
+    transition: transform 0.2s, box-shadow 0.3s, background-color 0.3s;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
 }
 
-.deploy-button:hover {
+.deploy-button:disabled {
+    background: var(--border-color);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.deploy-button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
 }
 
-/* Status Message */
 #status-message {
     margin-top: 20px;
     padding: 15px;
     border-radius: 6px;
     text-align: center;
     font-weight: 500;
-    display: none; /* Hidden by default */
+    display: none;
 }
 
 #status-message.success {
@@ -282,8 +284,13 @@ input[type="text"]:focus, select:focus {
     border: 1px solid var(--error-color);
     display: block;
 }
+#status-message a {
+    color: var(--success-color);
+    font-weight: 700;
+    text-decoration: underline;
+}
 
-/* Loader */
+
 .loader {
     width: 20px;
     height: 20px;
@@ -302,7 +309,6 @@ footer {
     font-size: 0.9rem;
 }
 
-/* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -323,7 +329,6 @@ footer {
     to { transform: rotate(360deg); }
 }
 
-/* Font Awesome Icon Fix */
 .fas {
     font-family: "Font Awesome 5 Free" !important;
     font-weight: 900;
