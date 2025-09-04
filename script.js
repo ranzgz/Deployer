@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open('preview.html', '_blank');
     };
     
+    // FUNGSI-FUNGSI YANG HILANG SEBELUMNYA
     const updateUrlPreview = () => {
         const subdomain = subdomainInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || '[project-name]';
         const selectedOption = domainSelect.options[domainSelect.selectedIndex];
@@ -211,3 +212,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load ---
     fetchDomains();
+});
