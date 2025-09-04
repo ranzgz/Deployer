@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         const finalDomain = `${projectName}.${domainName[0]}`;
         const vercelFilesPayload = await prepareFilesForVercel(uploadedFiles);
         
-        // --- Langkah 1: Deploy ke Vercel ---
+        // Langkah 1: Deploy ke Vercel
         console.log(`Step 1: Deploying project "${projectName}"...`);
         const vercelApiUrl = VERCEL_TEAM_ID ? `https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}` : 'https://api.vercel.com/v13/deployments';
         const deployResponse = await fetch(vercelApiUrl, {
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         const projectId = deployData.projectId;
         console.log(`Step 1 Success. Project ID: ${projectId}`);
 
-        // --- Langkah 2: Add Domain ke Vercel ---
+        // Langkah 2: Add Domain
         console.log(`Step 2: Adding domain ${finalDomain} to project...`);
         await fetch(`https://api.vercel.com/v10/projects/${projectId}/domains`, {
             method: 'POST',
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({ name: finalDomain }),
         });
 
-        // --- Langkah 3: Dapatkan Konfigurasi & Tentukan Target DNS ---
+        // Langkah 3: Dapatkan Konfigurasi & Tentukan Target DNS
         console.log(`Step 3: Getting domain configuration...`);
         const domainConfigResponse = await fetch(`https://api.vercel.com/v9/projects/${projectId}/domains/${finalDomain}`, {
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}` }
@@ -60,23 +60,21 @@ export default async function handler(req, res) {
         const domainConfigData = await domainConfigResponse.json();
         if (!domainConfigResponse.ok) throw new Error(`Get Domain Config Error: ${domainConfigData.error?.message}`);
 
-        let cnameName = projectName; // Default name
-        let cnameValue; // Target CNAME
+        let cnameName = projectName;
+        let cnameValue;
 
         const verificationRecord = domainConfigData.verification?.find(rec => rec.type === 'CNAME');
 
         if (verificationRecord) {
-            // Skenario 1: Domain BARU, Vercel memberikan record verifikasi
             cnameName = verificationRecord.domain.replace(`.${domainName[0]}`, '');
             cnameValue = verificationRecord.value;
             console.log(`Found unique verification record. Name: ${cnameName}, Value: ${cnameValue}`);
         } else {
-            // Skenario 2: Domain LAMA/TERPERCAYA, Vercel tidak memberikan record verifikasi
             cnameValue = 'cname.vercel-dns.com';
             console.log(`No unique verification record found. Using default target: ${cnameValue}`);
         }
 
-        // --- Langkah 4: Buat Record DNS di FishNemo API ---
+        // Langkah 4: Buat Record DNS
         console.log(`Step 4: Creating DNS record...`);
         const fishnemoFormData = new URLSearchParams();
         fishnemoFormData.append('subdomain', cnameName);
@@ -94,8 +92,7 @@ export default async function handler(req, res) {
         }
         console.log(`Step 4 Success. DNS record created.`);
 
-        // --- Langkah 5: (Opsional) Trigger Verifikasi ---
-        // Langkah ini aman untuk dijalankan di kedua skenario.
+        // Langkah 5: Trigger Verifikasi
         console.log(`Step 5: Triggering verification on Vercel...`);
         await fetch(`https://api.vercel.com/v9/projects/${projectId}/domains/${finalDomain}/verify`, {
             method: 'POST',
@@ -111,7 +108,7 @@ export default async function handler(req, res) {
     }
 }
 
-// --- Helper Functions (Tidak ada perubahan) ---
+// Helper Functions
 function parseFormData(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({});

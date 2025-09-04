@@ -8,21 +8,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const subdomainInput = document.getElementById('subdomain-name');
     const urlPreview = document.getElementById('url-preview-text');
     const deployBtn = document.getElementById('deploy-btn');
+    const previewBtn = document.getElementById('preview-btn');
     const statusMessage = document.getElementById('status-message');
     const loader = deployBtn.querySelector('.loader');
     const buttonText = deployBtn.querySelector('.button-text');
 
     // --- State ---
-    let uploadedFiles = []; // This will store the actual File objects
+    let uploadedFiles = [];
 
     // --- Functions ---
     const fetchDomains = async () => {
         try {
-            // --- PERUBAHAN DI SINI ---
-            // Kita sekarang memanggil proxy lokal kita, bukan API eksternal secara langsung.
             const response = await fetch('/api/get-domains');
-            // -------------------------
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Network response was not ok');
@@ -47,19 +44,37 @@ document.addEventListener('DOMContentLoaded', () => {
         fileList.innerHTML = '';
         uploadedFiles = [];
         deployBtn.disabled = true;
+        previewBtn.disabled = true;
 
         for (const file of files) {
             if (file.type === 'application/zip' || file.name.endsWith('.zip')) {
                 displayFile(` unpacking ${file.name}...`, 'fas fa-spinner fa-spin');
                 const zip = await JSZip.loadAsync(file);
-                fileList.innerHTML = ''; // Clear "unpacking" message
-                for (const filename in zip.files) {
-                    if (!zip.files[filename].dir) {
-                        const fileData = await zip.files[filename].async('blob');
-                        // Buat path relatif yang benar jika ada folder di dalam zip
-                        const extractedFile = new File([fileData], filename);
+                fileList.innerHTML = '';
+
+                let fileEntries = Object.values(zip.files).filter(entry => !entry.dir);
+                let rootFolder = '';
+
+                if (fileEntries.length > 0) {
+                    const firstPathParts = fileEntries[0].name.split('/');
+                    if (firstPathParts.length > 1) {
+                        const potentialRoot = firstPathParts[0] + '/';
+                        const allInRoot = fileEntries.every(entry => entry.name.startsWith(potentialRoot));
+                        if (allInRoot) {
+                            rootFolder = potentialRoot;
+                            console.log(`Detected single root folder in ZIP: "${rootFolder}"`);
+                        }
+                    }
+                }
+
+                for (const entry of fileEntries) {
+                    const fileData = await entry.async('blob');
+                    const finalName = rootFolder ? entry.name.substring(rootFolder.length) : entry.name;
+
+                    if (finalName) {
+                        const extractedFile = new File([fileData], finalName, { type: fileData.type });
                         uploadedFiles.push(extractedFile);
-                        displayFile(filename, 'fas fa-file-code');
+                        displayFile(finalName, 'fas fa-file-code');
                     }
                 }
             } else {
@@ -70,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (uploadedFiles.length > 0) {
             deployBtn.disabled = false;
+            previewBtn.disabled = false;
         }
     };
 
@@ -77,6 +93,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const li = document.createElement('li');
         li.innerHTML = `<i class="${iconClass}"></i> ${name}`;
         fileList.appendChild(li);
+    };
+
+    const openPreview = async () => {
+        if (uploadedFiles.length === 0) return;
+
+        const filesForStorage = await Promise.all(
+            uploadedFiles.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        resolve({
+                            name: file.name,
+                            type: file.type,
+                            dataUrl: event.target.result
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
+            })
+        );
+        
+        sessionStorage.setItem('previewFiles', JSON.stringify(filesForStorage));
+        window.open('preview.html', '_blank');
     };
     
     const updateUrlPreview = () => {
@@ -139,9 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const setLoadingState = (isLoading) => {
-        deployBtn.disabled = isLoading;
-        loader.hidden = !isLoading;
-        buttonText.textContent = isLoading ? 'Deploying...' : 'Deploy Project';
+        if (isLoading) {
+            deployBtn.disabled = true;
+            deployBtn.classList.add('loading');
+            loader.hidden = false;
+            buttonText.textContent = 'Deploying...';
+        } else {
+            deployBtn.disabled = false;
+            deployBtn.classList.remove('loading');
+            loader.hidden = true;
+            buttonText.textContent = 'Deploy Project';
+        }
     };
 
     // --- Event Listeners ---
@@ -156,10 +203,11 @@ document.addEventListener('DOMContentLoaded', () => {
     browseBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', () => handleFiles(fileInput.files));
     
+    previewBtn.addEventListener('click', openPreview);
+    
     subdomainInput.addEventListener('input', updateUrlPreview);
     domainSelect.addEventListener('change', updateUrlPreview);
     deployBtn.addEventListener('click', deployProject);
 
     // --- Initial Load ---
     fetchDomains();
-});
