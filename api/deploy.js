@@ -65,27 +65,36 @@ export default async function handler(req, res) {
         }
         console.log('Custom domain added to Vercel project. Now fetching verification info...');
         
-        // --- LANGKAH 3 (KRUSIAL): Ambil konfigurasi verifikasi dari Vercel ---
+        // --- Langkah 3 (DIPERBARUI): Ambil konfigurasi dan tentukan target CNAME ---
         const getConfigResponse = await fetch(`https://api.vercel.com/v9/projects/${projectId}/domains/${finalDomain}`, {
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}` }
         });
         const configData = await getConfigResponse.json();
         if (!getConfigResponse.ok) throw new Error(configData.error?.message || 'Failed to get domain configuration from Vercel.');
 
-        // Cari record verifikasi tipe CNAME
-        const cnameVerificationRecord = configData.verification.find(record => record.type === 'CNAME');
-        if (!cnameVerificationRecord) throw new Error('Vercel did not provide a CNAME verification record.');
+        let cnameTarget;
+        
+        // Coba cari record verifikasi unik terlebih dahulu
+        const cnameVerificationRecord = configData.verification?.find(record => record.type === 'CNAME');
 
-        const vercelCnameTarget = cnameVerificationRecord.value;
-        console.log(`Vercel requires CNAME value: ${vercelCnameTarget}`);
+        if (cnameVerificationRecord && cnameVerificationRecord.value) {
+            // Skenario 1: Vercel memberikan CNAME verifikasi unik
+            cnameTarget = cnameVerificationRecord.value;
+            console.log(`Vercel requires unique CNAME verification value: ${cnameTarget}`);
+        } else {
+            // Skenario 2 (Fallback): Vercel tidak memberikan CNAME verifikasi
+            // Ini terjadi jika domain sudah dipercaya. Gunakan target default.
+            cnameTarget = 'cname.vercel-dns.com';
+            console.log('Vercel did not provide a unique CNAME. Using default target: cname.vercel-dns.com');
+        }
 
-        // --- Langkah 4: Buat record CNAME dengan VALUE yang benar dari Vercel ---
-        console.log(`Creating CNAME record for ${finalDomain} -> ${vercelCnameTarget}`);
+        // --- Langkah 4: Buat record CNAME dengan target yang sudah ditentukan ---
+        console.log(`Creating CNAME record for ${finalDomain} -> ${cnameTarget}`);
         const fishnemoFormData = new URLSearchParams();
         fishnemoFormData.append('subdomain', projectName);
         fishnemoFormData.append('domain_id', domainId[0]);
         fishnemoFormData.append('record_type', 'CNAME');
-        fishnemoFormData.append('target', vercelCnameTarget); // Menggunakan value unik dari Vercel
+        fishnemoFormData.append('target', cnameTarget);
 
         const fishnemoResponse = await fetch('https://subdo.fishnemo.xyz/api/create', {
             method: 'POST',
