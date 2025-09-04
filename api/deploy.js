@@ -1,7 +1,6 @@
 import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
-import JSZip from 'jszip';
 
 // This tells Vercel that the handler function deals with multipart/form-data
 export const config = {
@@ -16,16 +15,14 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    // --- 1. Get Secure Environment Variables ---
     const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
-    const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID; // Optional: Add if deploying to a Vercel Team
+    const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
 
     if (!VERCEL_API_TOKEN) {
         return res.status(500).json({ message: 'Server configuration error: Vercel API token is missing.' });
     }
 
     try {
-        // --- 2. Parse Incoming Files and Fields from Front-End ---
         const { fields, files } = await parseFormData(req);
         const { subdomain, domainId, domainName } = fields;
         const uploadedFiles = files.files;
@@ -33,12 +30,11 @@ export default async function handler(req, res) {
         if (!subdomain || !domainId || !domainName || !uploadedFiles || uploadedFiles.length === 0) {
             return res.status(400).json({ message: 'Missing required fields or files.' });
         }
-
-        // --- 3. Prepare Files for Vercel Deployments API ---
+        
+        const projectName = subdomain[0];
         const vercelFilesPayload = await prepareFilesForVercel(uploadedFiles);
         
-        // --- 4. Deploy to Vercel ---
-        console.log(`Deploying project "${subdomain[0]}" to Vercel...`);
+        console.log(`Deploying project "${projectName}" to Vercel...`);
         const vercelApiUrl = VERCEL_TEAM_ID ? `https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}` : 'https://api.vercel.com/v13/deployments';
         
         const vercelResponse = await fetch(vercelApiUrl, {
@@ -48,26 +44,33 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                name: subdomain[0],
+                name: projectName,
                 files: vercelFilesPayload,
+                // --- PERBAIKAN DI SINI ---
+                // Menambahkan projectSettings untuk Vercel API
+                projectSettings: {
+                    framework: null, // null berarti "Other" atau statis
+                },
+                // -------------------------
             }),
         });
 
         const vercelData = await vercelResponse.json();
         if (!vercelResponse.ok) {
+            // Memberikan pesan error yang lebih detail dari Vercel
+            console.error('Vercel API Error:', vercelData.error);
             throw new Error(vercelData.error?.message || 'Failed to deploy to Vercel.');
         }
         console.log(`Vercel deployment successful. URL: ${vercelData.url}`);
 
-        // --- 5. Create Custom Subdomain Record via FishNemo API ---
-        const finalDomain = `${subdomain[0]}.${domainName[0]}`;
-        console.log(`Creating CNAME record for ${finalDomain} -> ${vercelData.url}`);
+        const finalDomain = `${projectName}.${domainName[0]}`;
+        console.log(`Creating CNAME record for ${finalDomain}...`);
         
         const fishnemoFormData = new URLSearchParams();
-        fishnemoFormData.append('subdomain', subdomain[0]);
+        fishnemoFormData.append('subdomain', projectName);
         fishnemoFormData.append('domain_id', domainId[0]);
         fishnemoFormData.append('record_type', 'CNAME');
-        fishnemoFormData.append('target', 'cname.vercel-dns.com'); // Vercel's required CNAME target
+        fishnemoFormData.append('target', 'cname.vercel-dns.com');
 
         const fishnemoResponse = await fetch('https://subdo.fishnemo.xyz/api/create', {
             method: 'POST',
@@ -80,8 +83,7 @@ export default async function handler(req, res) {
         }
         console.log('FishNemo subdomain record created successfully.');
 
-        // --- 6. Add Custom Domain to the Vercel Project ---
-        const projectId = vercelData.projectId;
+        const projectId = vercelData.projectId || projectName;
         console.log(`Adding domain ${finalDomain} to Vercel project ${projectId}...`);
         
         const addDomainResponse = await fetch(`https://api.vercel.com/v10/projects/${projectId}/domains`, {
@@ -99,16 +101,14 @@ export default async function handler(req, res) {
         }
         console.log('Custom domain added to Vercel project successfully.');
 
-        // --- 7. Send Success Response to Front-End ---
         res.status(200).json({ message: 'Deployment successful!', finalUrl: finalDomain });
 
     } catch (error) {
-        console.error('Full error:', error);
+        console.error('Full error in /api/deploy:', error);
         res.status(500).json({ message: error.message });
     }
 }
 
-// Helper function to parse form data with formidable
 function parseFormData(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({});
@@ -119,30 +119,19 @@ function parseFormData(req) {
     });
 }
 
-// Helper function to process uploaded files (including ZIPs)
 async function prepareFilesForVercel(files) {
     const payload = [];
-    for (const file of files) {
+    // Jika hanya satu file, 'files' bukan array, jadi kita buat jadi array
+    const fileArray = Array.isArray(files) ? files : [files];
+
+    for (const file of fileArray) {
         const fileContent = fs.readFileSync(file.filepath);
-        if (file.mimetype === 'application/zip' || file.originalFilename.endsWith('.zip')) {
-            const zip = await JSZip.loadAsync(fileContent);
-            for (const filename in zip.files) {
-                if (!zip.files[filename].dir) {
-                    const contentBuffer = await zip.files[filename].async('nodebuffer');
-                    payload.push({
-                        file: filename,
-                        data: contentBuffer.toString('base64'),
-                        encoding: 'base64',
-                    });
-                }
-            }
-        } else {
-            payload.push({
-                file: file.originalFilename,
-                data: fileContent.toString('base64'),
-                encoding: 'base64',
-            });
-        }
+        // Kita tidak perlu lagi handle ZIP di backend karena sudah dihandle di frontend
+        payload.push({
+            file: file.originalFilename,
+            data: fileContent.toString('base64'),
+            encoding: 'base64',
+        });
     }
     return payload;
 }
