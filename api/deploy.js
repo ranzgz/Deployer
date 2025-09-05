@@ -14,6 +14,8 @@ export default async function handler(req, res) {
 
     const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
     const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID;
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
     if (!VERCEL_API_TOKEN) {
         return res.status(500).json({ message: 'Server configuration error: Vercel API token is missing.' });
@@ -27,11 +29,13 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Missing required fields or files.' });
         }
         
+        const firstFile = Array.isArray(uploadedFiles) ? uploadedFiles[0] : uploadedFiles;
+        
         const projectName = subdomain[0];
         const finalDomain = `${projectName}.${domainName[0]}`;
         const vercelFilesPayload = await prepareFilesForVercel(uploadedFiles);
         
-        // Langkah 1: Deploy ke Vercel
+        // --- Langkah 1-5 (Proses Vercel & FishNemo) ---
         console.log(`Step 1: Deploying project "${projectName}"...`);
         const vercelApiUrl = VERCEL_TEAM_ID ? `https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}` : 'https://api.vercel.com/v13/deployments';
         const deployResponse = await fetch(vercelApiUrl, {
@@ -44,61 +48,54 @@ export default async function handler(req, res) {
         const projectId = deployData.projectId;
         console.log(`Step 1 Success. Project ID: ${projectId}`);
 
-        // Langkah 2: Add Domain
         console.log(`Step 2: Adding domain ${finalDomain} to project...`);
         await fetch(`https://api.vercel.com/v10/projects/${projectId}/domains`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: finalDomain }),
         });
-
-        // Langkah 3: Dapatkan Konfigurasi & Tentukan Target DNS
+        
         console.log(`Step 3: Getting domain configuration...`);
         const domainConfigResponse = await fetch(`https://api.vercel.com/v9/projects/${projectId}/domains/${finalDomain}`, {
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}` }
         });
         const domainConfigData = await domainConfigResponse.json();
         if (!domainConfigResponse.ok) throw new Error(`Get Domain Config Error: ${domainConfigData.error?.message}`);
-
+        
         let cnameName = projectName;
         let cnameValue;
-
         const verificationRecord = domainConfigData.verification?.find(rec => rec.type === 'CNAME');
-
         if (verificationRecord) {
             cnameName = verificationRecord.domain.replace(`.${domainName[0]}`, '');
             cnameValue = verificationRecord.value;
-            console.log(`Found unique verification record. Name: ${cnameName}, Value: ${cnameValue}`);
         } else {
             cnameValue = 'cname.vercel-dns.com';
-            console.log(`No unique verification record found. Using default target: ${cnameValue}`);
         }
 
-        // Langkah 4: Buat Record DNS
         console.log(`Step 4: Creating DNS record...`);
         const fishnemoFormData = new URLSearchParams();
         fishnemoFormData.append('subdomain', cnameName);
         fishnemoFormData.append('domain_id', domainId[0]);
         fishnemoFormData.append('record_type', 'CNAME');
         fishnemoFormData.append('target', cnameValue);
-
-        const fishnemoResponse = await fetch('https://subdo.fishnemo.xyz/api/create', {
-            method: 'POST',
-            body: fishnemoFormData,
-        });
+        const fishnemoResponse = await fetch('https://subdo.fishnemo.xyz/api/create', { method: 'POST', body: fishnemoFormData });
         if (!fishnemoResponse.ok) {
             const errorData = await fishnemoResponse.json();
             throw new Error(`FishNemo API Error: ${errorData.message}`);
         }
-        console.log(`Step 4 Success. DNS record created.`);
 
-        // Langkah 5: Trigger Verifikasi
         console.log(`Step 5: Triggering verification on Vercel...`);
         await fetch(`https://api.vercel.com/v9/projects/${projectId}/domains/${finalDomain}/verify`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}` }
         });
-        console.log(`Step 5 Complete. Verification process initiated.`);
+        
+        // --- Langkah 6: Kirim Notifikasi ke Telegram ---
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+            console.log("Sending notification to Telegram...");
+            const message = `🚀 *New Deployment on FishNemo!* 🚀\n\n*Website:* \`${finalDomain}\`\n*URL:* [https://${finalDomain}](https://${finalDomain})\n\nA .zip file of the deployed content is attached.`;
+            await sendTelegramNotification(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, firstFile);
+        }
 
         res.status(200).json({ message: 'Deployment successful! Domain is now verifying.', finalUrl: finalDomain });
 
@@ -108,7 +105,35 @@ export default async function handler(req, res) {
     }
 }
 
-// Helper Functions
+// --- Helper Functions ---
+async function sendTelegramNotification(botToken, chatId, message, file) {
+    try {
+        const fileContent = fs.readFileSync(file.filepath);
+        
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('caption', message);
+        formData.append('parse_mode', 'Markdown');
+        
+        const fileBlob = new Blob([fileContent]);
+        formData.append('document', fileBlob, file.originalFilename || 'deploy.zip');
+
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Telegram API Error:', errorData.description);
+        } else {
+            console.log('Telegram notification sent successfully.');
+        }
+    } catch (err) {
+        console.error('Failed to send Telegram notification:', err);
+    }
+}
+
 function parseFormData(req) {
     return new Promise((resolve, reject) => {
         const form = formidable({});
