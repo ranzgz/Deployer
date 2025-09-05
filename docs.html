@@ -73,7 +73,7 @@
         </header>
         
         <div style="text-align: right; margin-bottom: 20px;">
-             <a href="index.html" style="color: var(--primary-text-color); font-weight: 500;">← Back to Deployer</a>
+             <a href="/" style="color: var(--primary-text-color); font-weight: 500;">← Back to Deployer</a>
         </div>
 
         <div class="step-card">
@@ -120,7 +120,7 @@
             <h3>Example Usage (cURL)</h3>
             <p style="color: var(--secondary-text-color);">Here's how you can call the API using cURL from your terminal:</p>
             <div class="code-block">
-<span class="key">curl</span> --location --request POST 'https://[your-deployer-url].vercel.app/api/deploy' \
+<span class="key">curl</span> --location --request POST 'https://deployer.fihsnemo.xyz/api/deploy' \
 --header 'Content-Type: multipart/form-data' \
 --form 'subdomain="my-new-site"' \
 --form 'domainId="1"' \

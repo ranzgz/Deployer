@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         
         sessionStorage.setItem('previewFiles', JSON.stringify(filesForStorage));
-        window.open('preview.html', '_blank');
+        window.open('/preview', '_blank');
     };
     
     // FUNGSI-FUNGSI YANG HILANG SEBELUMNYA
