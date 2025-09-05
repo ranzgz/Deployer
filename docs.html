@@ -22,47 +22,50 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: 'Courier New', Courier, monospace;
-            color: #c7d2fe; /* Light indigo for text */
-        }
-        .code-block .comment {
-            color: #6b7280; /* Gray for comments */
-        }
-        .code-block .key {
-            color: #a5b4fc; /* Lighter indigo for keys */
-        }
-        .code-block .string {
-            color: #f9a8d4; /* Pink for strings */
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-weight: 600;
             font-size: 0.9em;
+            color: #c7d2fe; /* Light indigo for text */
+            position: relative;
         }
-        .badge.post {
-            background-color: rgba(74, 222, 128, 0.2);
-            color: #4ade80;
-        }
-        .badge.required {
-            background-color: rgba(248, 113, 113, 0.2);
-            color: #f87171;
-            font-size: 0.8em;
-            margin-left: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
+        .code-block .comment { color: #6b7280; }
+        .code-block .key { color: #a5b4fc; }
+        .code-block .string { color: #f9a8d4; }
+        .code-block .function { color: #818cf8; }
+        .code-block .keyword { color: #c4b5fd; }
+        .code-block .variable { color: #e0e7ff; }
+        
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--card-bg-color);
             border: 1px solid var(--border-color);
-            padding: 12px;
-            text-align: left;
+            color: var(--secondary-text-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        th {
-            background-color: var(--bg-color);
+        .copy-button:hover {
+            background: #4f46e5;
+            color: white;
         }
+        .copy-button:active {
+            transform: scale(0.95);
+        }
+
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.9em; }
+        .badge.post { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .badge.required { background-color: rgba(248, 113, 113, 0.2); color: #f87171; font-size: 0.8em; margin-left: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: var(--bg-color); }
+        
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-top: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; color: var(--secondary-text-color); font-family: var(--font-family); font-size: 1em; }
+        .tab.active { color: var(--primary-text-color); border-bottom: 2px solid #4f46e5; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -84,67 +87,151 @@
         <div class="step-card">
             <h3>Parameters (multipart/form-data)</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th>Field Name</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
+                <thead> <tr> <th>Field Name</th> <th>Type</th> <th>Description</th> </tr> </thead>
                 <tbody>
-                    <tr>
-                        <td><code>subdomain</code></td>
-                        <td>String</td>
-                        <td>The desired project name/subdomain. <span class="badge required">Required</span></td>
-                    </tr>
-                    <tr>
-                        <td><code>domainId</code></td>
-                        <td>Number</td>
-                        <td>The ID of the domain to use, fetched from <code>/api/domains</code>. <span class="badge required">Required</span></td>
-                    </tr>
-                     <tr>
-                        <td><code>domainName</code></td>
-                        <td>String</td>
-                        <td>The full name of the domain selected (e.g., "rafxz.xyz"). <span class="badge required">Required</span></td>
-                    </tr>
-                    <tr>
-                        <td><code>files</code></td>
-                        <td>File / [File]</td>
-                        <td>One or more files for the website. The entry point must be <code>index.html</code>. You can also upload a single <code>.zip</code> file which will be automatically extracted by the client. <span class="badge required">Required</span></td>
-                    </tr>
+                    <tr> <td><code>subdomain</code></td> <td>String</td> <td>The desired project name/subdomain. <span class="badge required">Required</span></td> </tr>
+                    <tr> <td><code>domainId</code></td> <td>Number</td> <td>The ID of the domain to use, fetched from the API. <span class="badge required">Required</span></td> </tr>
+                    <tr> <td><code>domainName</code></td> <td>String</td> <td>The full name of the domain selected (e.g., "rafxz.xyz"). <span class="badge required">Required</span></td> </tr>
+                    <tr> <td><code>files</code></td> <td>File / [File]</td> <td>One or more files for the website. <code>index.html</code> is required. You can also upload a single <code>.zip</code> file. <span class="badge required">Required</span></td> </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="step-card">
-            <h3>Example Usage (cURL)</h3>
-            <p style="color: var(--secondary-text-color);">Here's how you can call the API using cURL from your terminal:</p>
-            <div class="code-block">
-<span class="key">curl</span> --location --request POST 'https://deployer.fihsnemo.xyz/api/deploy' \
---header 'Content-Type: multipart/form-data' \
---form 'subdomain="my-new-site"' \
---form 'domainId="1"' \
---form 'domainName="rafxz.xyz"' \
---form 'files=@"/path/to/your/project.zip"'
+            <h3>Example Usage</h3>
+            <div class="tabs">
+                <button class="tab active" data-tab="curl">cURL</button>
+                <button class="tab" data-tab="python">Python</button>
+                <button class="tab" data-tab="nodejs">Node.js</button>
+            </div>
+
+            <div id="curl" class="tab-content active">
+                <div class="code-block">
+                    <button class="copy-button">Copy</button>
+<pre><span class="key">curl</span> -X POST \
+  https://deployer.fishnemo.xyz/api/deploy \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'subdomain=my-new-site' \
+  -F 'domainId=1' \
+  -F 'domainName=rafxz.xyz' \
+  -F 'files=@"/path/to/your/project.zip"'</pre>
+                </div>
+            </div>
+
+            <div id="python" class="tab-content">
+                <div class="code-block">
+                    <button class="copy-button">Copy</button>
+<pre><span class="keyword">import</span> requests
+
+<span class="variable">url</span> = <span class="string">"https://deployer.fishnemo.xyz/api/deploy"</span>
+<span class="variable">file_path</span> = <span class="string">'/path/to/your/project.zip'</span>
+
+<span class="variable">payload</span> = {
+    <span class="string">'subdomain'</span>: (<span class="keyword">None</span>, <span class="string">'my-new-site'</span>),
+    <span class="string">'domainId'</span>: (<span class="keyword">None</span>, <span class="string">'1'</span>),
+    <span class="string">'domainName'</span>: (<span class="keyword">None</span>, <span class="string">'rafxz.xyz'</span>)
+}
+<span class="variable">files</span> = {
+    <span class="string">'files'</span>: (<span class="string">'project.zip'</span>, <span class="function">open</span>(<span class="variable">file_path</span>, <span class="string">'rb'</span>), <span class="string">'application/zip'</span>)
+}
+
+<span class="variable">response</span> = requests.<span class="function">post</span>(<span class="variable">url</span>, data=<span class="variable">payload</span>, files=<span class="variable">files</span>)
+
+<span class="function">print</span>(response.<span class="function">status_code</span>)
+<span class="function">print</span>(response.<span class="function">json</span>())</pre>
+                </div>
+            </div>
+
+            <div id="nodejs" class="tab-content">
+                 <div class="code-block">
+                    <button class="copy-button">Copy</button>
+<pre><span class="keyword">const</span> fs = <span class="function">require</span>(<span class="string">'fs'</span>);
+<span class="keyword">const</span> FormData = <span class="function">require</span>(<span class="string">'form-data'</span>);
+<span class="keyword">const</span> axios = <span class="function">require</span>(<span class="string">'axios'</span>);
+
+<span class="keyword">const</span> <span class="function">deploy</span> = <span class="keyword">async</span> () => {
+  <span class="keyword">const</span> <span class="variable">url</span> = <span class="string">'https://deployer.fishnemo.xyz/api/deploy'</span>;
+  <span class="keyword">const</span> <span class="variable">filePath</span> = <span class="string">'/path/to/your/project.zip'</span>;
+
+  <span class="keyword">const</span> <span class="variable">form</span> = <span class="keyword">new</span> <span class="function">FormData</span>();
+  <span class="variable">form</span>.<span class="function">append</span>(<span class="string">'subdomain'</span>, <span class="string">'my-new-site'</span>);
+  <span class="variable">form</span>.<span class="function">append</span>(<span class="string">'domainId'</span>, <span class="string">'1'</span>);
+  <span class="variable">form</span>.<span class="function">append</span>(<span class="string">'domainName'</span>, <span class="string">'rafxz.xyz'</span>);
+  <span class="variable">form</span>.<span class="function">append</span>(<span class="string">'files'</span>, fs.<span class="function">createReadStream</span>(<span class="variable">filePath</span>));
+
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> <span class="variable">response</span> = <span class="keyword">await</span> axios.<span class="function">post</span>(<span class="variable">url</span>, <span class="variable">form</span>, {
+      headers: {
+        ...<span class="variable">form</span>.<span class="function">getHeaders</span>()
+      }
+    });
+    console.<span class="function">log</span>(<span class="string">'Status:'</span>, response.status);
+    console.<span class="function">log</span>(<span class="string">'Data:'</span>, response.data);
+  } <span class="keyword">catch</span> (error) {
+    console.<span class="function">error</span>(<span class="string">'Error:'</span>, error.response.data);
+  }
+};
+
+<span class="function">deploy</span>();</pre>
+                </div>
             </div>
         </div>
         
         <div class="step-card">
             <h3>Responses</h3>
-            <h4>On Success (200 OK)</h4>
+            <h4>✅ On Success (200 OK)</h4>
             <div class="code-block">
-{
+<pre>{
   <span class="key">"message"</span>: <span class="string">"Deployment successful! Domain is now verifying."</span>,
   <span class="key">"finalUrl"</span>: <span class="string">"my-new-site.rafxz.xyz"</span>
-}
+}</pre>
             </div>
-            <h4>On Error (4xx/5xx)</h4>
+            <h4>❌ On Error (e.g., 400 Bad Request)</h4>
+            <p style="color: var(--secondary-text-color);">Returned if required fields are missing.</p>
             <div class="code-block">
-{
-  <span class="key">"message"</span>: <span class="string">"Error message describing what went wrong."</span>
-}
+<pre>{
+  <span class="key">"message"</span>: <span class="string">"Missing required fields or files."</span>
+}</pre>
+            </div>
+             <h4>❌ On Error (e.g., 500 Internal Server Error)</h4>
+             <p style="color: var(--secondary-text-color);">Returned for server-side issues, like an invalid API key.</p>
+            <div class="code-block">
+<pre>{
+  <span class="key">"message"</span>: <span class="string">"Vercel Deploy Error: The provided authorization token is invalid."</span>
+}</pre>
             </div>
         </div>
     </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(item => item.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const target = document.getElementById(tab.dataset.tab);
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    target.classList.add('active');
+                });
+            });
+
+            const copyButtons = document.querySelectorAll('.copy-button');
+            copyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const code = button.nextElementSibling.innerText;
+                    navigator.clipboard.writeText(code).then(() => {
+                        button.innerText = 'Copied!';
+                        setTimeout(() => {
+                            button.innerText = 'Copy';
+                        }, 2000);
+                    });
+                });
+            });
+        });
+    </script>
 </body>
 </html>

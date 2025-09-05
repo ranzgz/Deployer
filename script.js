@@ -12,9 +12,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusMessage = document.getElementById('status-message');
     const loader = deployBtn.querySelector('.loader');
     const buttonText = deployBtn.querySelector('.button-text');
+    const musicControl = document.getElementById('music-control');
+    const backgroundMusic = document.getElementById('background-music');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
 
     // --- State ---
     let uploadedFiles = [];
+    let isMusicPlaying = false;
+    let hasInteracted = false;
+
+    // --- Music Control Logic ---
+    const toggleMusic = () => {
+        if (isMusicPlaying) {
+            backgroundMusic.pause();
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+        } else {
+            backgroundMusic.play().catch(e => console.error("Autoplay was prevented:", e));
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        }
+        isMusicPlaying = !isMusicPlaying;
+    };
+    
+    // Mulai musik setelah interaksi pertama pengguna untuk menghindari blokir autoplay
+    const startMusicOnFirstInteraction = () => {
+        if (!hasInteracted) {
+            hasInteracted = true;
+            toggleMusic();
+        }
+    };
+
+    musicControl.addEventListener('click', toggleMusic);
+    document.body.addEventListener('click', startMusicOnFirstInteraction, { once: true });
+    document.body.addEventListener('keydown', startMusicOnFirstInteraction, { once: true });
+
 
     // --- Functions ---
     const fetchDomains = async () => {
