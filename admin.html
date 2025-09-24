@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - FishNemo Deployer</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container" style="max-width: 1000px; animation: fadeIn 1s ease-in-out;">
+        <header>
+            <h1><span class="gradient-text">Admin</span> Dashboard</h1>
+            <p style="color: var(--secondary-text-color);">Manage all deployed projects.</p>
+        </header>
+
+        <div id="login-section" class="step-card admin-login">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <input type="password" id="admin-password" placeholder="Enter Admin Password" autocomplete="current-password">
+            </div>
+            <button id="login-btn" class="deploy-button">Login</button>
+            <p id="login-error" style="color: var(--error-color); margin-top: 15px; display: none;"></p>
+        </div>
+
+        <div id="dashboard-section" class="step-card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>All Deployments</h2>
+                <button id="refresh-btn" class="browse-button">Refresh</button>
+            </div>
+            <div class="admin-table-container">
+                <table id="deploys-table" class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Project Name</th>
+                            <th>Domain</th>
+                            <th>Deployed At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data akan diisi oleh JS -->
+                        <tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="/admin.js"></script>
+</body>
+</html>
