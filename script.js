@@ -1,3 +1,5 @@
+// script.js (Lengkap dengan perbaikan error kritis)
+
 // --- Language Data ---
 const translations = {
     en: {
@@ -63,16 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.innerHTML = translations[lang][key];
             }
         });
-<<<<<<< HEAD
-        langToggleContainer.querySelectorAll('button').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.lang === lang);
-        });
-        // Perbarui placeholder yang tidak menggunakan data-translate
-        if (domainSelect) {
-            const firstOption = domainSelect.querySelector('option');
-            if (firstOption && firstOption.value === "") {
-                 firstOption.textContent = translations[lang]['select-domain-placeholder'];
-=======
         
         if (langToggleContainer) {
             langToggleContainer.querySelectorAll('button').forEach(btn => {
@@ -85,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const firstOption = domainSelect.querySelector('option');
             if (firstOption && firstOption.value === "") {
                  firstOption.textContent = translations[lang]['select-domain-placeholder'] || translations[lang]['loading-domains'];
->>>>>>> 308b48f (Deployer)
             }
         }
     };
@@ -142,20 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let uploadedFiles = [];
 
         const fetchDomains = async () => {
-<<<<<<< HEAD
-            // Tampilkan loading text sesuai bahasa
-=======
->>>>>>> 308b48f (Deployer)
             domainSelect.innerHTML = `<option value="">${translations[currentLang]['loading-domains']}</option>`;
             try {
                 const response = await fetch('/api/get-domains');
                 if (!response.ok) throw new Error('Network response was not ok');
                 const domainsData = await response.json();
                 
-<<<<<<< HEAD
-                // --- PERBAIKAN LOADING DOMAINS ---
-=======
->>>>>>> 308b48f (Deployer)
                 domainSelect.innerHTML = `<option value="" disabled selected>${translations[currentLang]['select-domain-placeholder']}</option>`;
                 domainsData.forEach(domain => {
                     const option = document.createElement('option');
@@ -222,23 +205,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const openPreview = async () => {
             if (uploadedFiles.length === 0) return;
             const filesForStorage = await Promise.all(
-<<<<<<< HEAD
-                uploadedFiles.map(file => {
-                    return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            resolve({ name: file.name, type: file.type, dataUrl: event.target.result });
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                })
-=======
                 uploadedFiles.map(file => new Promise(resolve => {
                     const reader = new FileReader();
                     reader.onload = e => resolve({ name: file.name, type: file.type, dataUrl: e.target.result });
                     reader.readAsDataURL(file);
                 }))
->>>>>>> 308b48f (Deployer)
             );
             sessionStorage.setItem('previewFiles', JSON.stringify(filesForStorage));
             window.open('/preview', '_blank');
@@ -273,13 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch('/api/deploy', { method: 'POST', body: formData });
                 const result = await response.json();
-<<<<<<< HEAD
-
-                if (!response.ok) throw new Error(result.message || 'An unknown error occurred on the server.');
-                
-=======
                 if (!response.ok) throw new Error(result.message);
->>>>>>> 308b48f (Deployer)
                 showStatus(`Success! Your site is live at: <a href="https://${result.finalUrl}" target="_blank">${result.finalUrl}</a>`, 'success');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
@@ -293,10 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
             statusMessage.className = type;
         };
 
-<<<<<<< HEAD
-        // --- PERBAIKAN BUG LOADING TOMBOL DEPLOY ---
-=======
->>>>>>> 308b48f (Deployer)
         const setLoadingState = (isLoading) => {
             if (isLoading) {
                 deployBtn.disabled = true;
@@ -307,21 +268,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 deployBtn.classList.remove('loading');
                 loader.hidden = true;
                 buttonText.textContent = translations[currentLang]['deploy-button'];
-<<<<<<< HEAD
-                // Hanya aktifkan tombol jika ada file yang diupload.
-                deployBtn.disabled = uploadedFiles.length === 0;
-            }
-        };
-        
-        // --- Event Listeners ---
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-=======
                 deployBtn.disabled = uploadedFiles.length === 0;
             }
         };
 
         dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
->>>>>>> 308b48f (Deployer)
         dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
         dropZone.addEventListener('drop', e => {
             e.preventDefault();
@@ -335,10 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
         domainSelect.addEventListener('change', updateUrlPreview);
         deployBtn.addEventListener('click', deployProject);
 
-<<<<<<< HEAD
-        // --- Initial Load ---
-=======
->>>>>>> 308b48f (Deployer)
         setLanguage('en');
         fetchDomains();
     }
