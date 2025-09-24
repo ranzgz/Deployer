@@ -3,96 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FishNemo - Deployer</title>
+    <title>FishNemo - Deployer | Deploy Static Sites Instantly</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* Styles khusus untuk landing page */
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--secondary-text-color);
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+        }
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .hero-buttons .btn {
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .hero-buttons .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+        }
+        .hero-buttons .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
+        }
+        .hero-buttons .btn-secondary {
+            background: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--primary-text-color);
+        }
+        .hero-buttons .btn-secondary:hover {
+            background: var(--bg-color);
+        }
+        .features-section {
+            padding: 80px 20px;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: var(--secondary-text-color);
+            max-width: 700px;
+            margin: 0 auto 50px auto;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .feature-card {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(79, 70, 229, 0.2);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            color: #a5b4fc;
+            margin-bottom: 20px;
+        }
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .feature-card p {
+            color: var(--secondary-text-color);
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
-
-    <!-- KONTROL MUSIK BARU -->
-    <div id="music-control">
-        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-            <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
-        </svg>
-        <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6" style="display: none;">
-            <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75zm9 0a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75z" clip-rule="evenodd" />
-        </svg>
-    </div>
-    <audio id="background-music" loop src="https://put.icu/s/d5oan1d7.mp3"></audio>
-
-    <div class="container">
-        <header>
-            <h1><span class="gradient-text">FishNemo</span> Deployer</h1>
-            <p>Deploy your static projects with a custom subdomain in seconds.</p>
-        </header>
-
+    <div class="container" style="max-width: 1200px;">
         <main>
-            <!-- Step 1: Upload Files -->
-            <div class="step-card" id="step1">
-                <h2><span class="step-number">1</span> Upload Your Project Files</h2>
-                <div id="drop-zone" class="drop-zone">
-                    <div class="drop-zone-prompt">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Drag & Drop your files here</p>
-                        <p class="small-text">(html, css, js, or a .zip file)</p>
-                        <p>or</p>
-                        <button id="browse-btn" class="browse-button">Browse Files</button>
+            <section class="hero">
+                <h1>Deploy Static Websites <span class="gradient-text">Instantly</span></h1>
+                <p>Upload your files, choose a subdomain, and get your project online in seconds with FishNemo Deployer.</p>
+                <div class="hero-buttons">
+                    <a href="/deploy" class="btn btn-primary">Deploy Now</a>
+                    <a href="/docs" class="btn btn-secondary">View Documentation</a>
+                </div>
+            </section>
+            
+            <section class="features-section">
+                <h2 class="section-title">Fitur Unggulan</h2>
+                <p class="section-subtitle">FishNemo Deployer menyediakan berbagai fitur canggih untuk memenuhi kebutuhan pengembangan Anda.</p>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡️</div>
+                        <h3>Cepat & Andal</h3>
+                        <p>Sistem kami dioptimalkan untuk kecepatan tinggi dan ketersediaan 99.9%, memastikan aplikasi Anda selalu berjalan lancar.</p>
                     </div>
-                    <input type="file" id="file-input" multiple hidden>
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <h3>Keamanan Terjamin</h3>
+                        <p>Dengan backend yang aman, API key Anda terlindungi dan tidak akan pernah terekspos di sisi klien.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">&lt;/&gt;</div>
+                        <h3>Mudah Diintegrasikan</h3>
+                        <p>Dokumentasi yang jelas dan contoh kode siap pakai untuk mempercepat proses pengembangan aplikasi Anda.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Terupdate</h3>
+                        <p>Platform selalu diperbarui dengan fitur terbaru sehingga Anda tidak ketinggalan teknologi.</p>
+                    </div>
+                     <div class="feature-card">
+                        <div class="feature-icon">🌿</div>
+                        <h3>Ekosistem Bersih & Ringan</h3>
+                        <p>Desain API yang efisien, bebas lag, dan mudah dioperasikan dalam semua lingkungan pengembangan.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎧</div>
+                        <h3>Layanan 24/7</h3>
+                        <p>Sistem otomatis kami siap membantu kapan saja, memastikan proyek Anda selalu berjalan lancar tanpa hambatan.</p>
+                    </div>
                 </div>
-                <div id="file-list-container">
-                    <h3>Project Files:</h3>
-                    <ul id="file-list">
-                        <!-- File items will be injected here by JS -->
-                    </ul>
-                </div>
-                <div class="preview-button-container">
-                    <button id="preview-btn" class="preview-button" disabled>Check Preview</button>
-                </div>
-            </div>
-
-            <!-- Step 2: Configure Domain -->
-            <div class="step-card" id="step2">
-                <h2><span class="step-number">2</span> Configure Your Domain</h2>
-                <div class="form-group">
-                    <label for="subdomain-name">Choose a Project Name (Subdomain)</label>
-                    <input type="text" id="subdomain-name" placeholder="e.g., my-awesome-project" autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="domain-select">Select a Domain</label>
-                    <select id="domain-select">
-                        <option value="">Loading domains...</option>
-                    </select>
-                </div>
-                <div class="url-preview">
-                    <h4>Your new website URL will be:</h4>
-                    <p id="url-preview-text">...</p>
-                </div>
-            </div>
-
-            <!-- Step 3: Deploy -->
-            <div class="step-card" id="step3">
-                 <h2><span class="step-number">3</span> Launch Your Website</h2>
-                 <p class="info-text">
-                    Ready to go live? Clicking deploy will automatically upload your files to Vercel and connect your chosen domain.
-                 </p>
-                 <button id="deploy-btn" class="deploy-button" disabled>
-                    <span class="button-text">Deploy Project</span>
-                    <div class="loader" hidden></div>
-                </button>
-                 <div id="status-message">
-                 </div>
-            </div>
+            </section>
         </main>
-
         <footer>
-            <p>&copy; 2023 FishNemo - Deployer. Built with ❤️ | <a href="/docs" style="color: var(--secondary-text-color);">API Docs</a></p>
+            <p>&copy; 2024 FishNemo Deployer. All rights reserved. | <a href="/docs" style="color: var(--secondary-text-color);">API Docs</a></p>
         </footer>
     </div>
-    <script src="script.js"></script>
 </body>
 </html>
