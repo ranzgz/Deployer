@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // script.js (Lengkap dengan perbaikan bug)
+=======
+// script.js (Lengkap dengan perbaikan error kritis)
+>>>>>>> 308b48f (Deployer)
 
 // --- Language Data ---
 const translations = {
@@ -47,10 +51,15 @@ const translations = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Language Toggle Logic ---
+    // --- Elemen Global (ada di beberapa halaman atau tidak menyebabkan error jika null) ---
     const langToggleContainer = document.getElementById('lang-toggle');
+    const musicControl = document.getElementById('music-control');
+    const backgroundMusic = document.getElementById('background-music');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
     let currentLang = 'en';
 
+    // --- Logika yang aman untuk elemen global ---
     const setLanguage = (lang) => {
         if (!translations[lang]) return;
         currentLang = lang;
@@ -60,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.innerHTML = translations[lang][key];
             }
         });
+<<<<<<< HEAD
         langToggleContainer.querySelectorAll('button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.lang === lang);
         });
@@ -68,6 +78,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const firstOption = domainSelect.querySelector('option');
             if (firstOption && firstOption.value === "") {
                  firstOption.textContent = translations[lang]['select-domain-placeholder'];
+=======
+        
+        if (langToggleContainer) {
+            langToggleContainer.querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+        }
+        
+        const domainSelect = document.getElementById('domain-select');
+        if (domainSelect) {
+            const firstOption = domainSelect.querySelector('option');
+            if (firstOption && firstOption.value === "") {
+                 firstOption.textContent = translations[lang]['select-domain-placeholder'] || translations[lang]['loading-domains'];
+>>>>>>> 308b48f (Deployer)
             }
         }
     };
@@ -81,31 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- DOM Element Selection ---
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const browseBtn = document.getElementById('browse-btn');
-    const fileList = document.getElementById('file-list');
-    const domainSelect = document.getElementById('domain-select');
-    const subdomainInput = document.getElementById('subdomain-name');
-    const urlPreview = document.getElementById('url-preview-text');
-    const deployBtn = document.getElementById('deploy-btn');
-    const previewBtn = document.getElementById('preview-btn');
-    const statusMessage = document.getElementById('status-message');
-    const loader = deployBtn ? deployBtn.querySelector('.loader') : null;
-    const buttonText = deployBtn ? deployBtn.querySelector('.button-text') : null;
-    const musicControl = document.getElementById('music-control');
-    const backgroundMusic = document.getElementById('background-music');
-    const playIcon = document.getElementById('play-icon');
-    const pauseIcon = document.getElementById('pause-icon');
-
-    // --- State ---
-    let uploadedFiles = [];
-    let isMusicPlaying = false;
-    let hasInteracted = false;
-
-    // --- Music Control Logic ---
-    if (musicControl) {
+    if (musicControl && backgroundMusic && playIcon && pauseIcon) {
+        let isMusicPlaying = false;
+        let hasInteracted = false;
         const toggleMusic = () => {
             if (isMusicPlaying) {
                 backgroundMusic.pause();
@@ -118,33 +120,48 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             isMusicPlaying = !isMusicPlaying;
         };
-        
         const startMusicOnFirstInteraction = () => {
             if (!hasInteracted) {
                 hasInteracted = true;
                 toggleMusic();
             }
         };
-
         musicControl.addEventListener('click', toggleMusic);
         document.body.addEventListener('click', startMusicOnFirstInteraction, { once: true });
         document.body.addEventListener('keydown', startMusicOnFirstInteraction, { once: true });
     }
 
-    // --- Functions (Hanya untuk halaman deploy) ---
-    if (document.body.contains(deployBtn)) {
+    // --- Logika Khusus untuk Halaman Deploy ---
+    const deployBtn = document.getElementById('deploy-btn');
+    if (deployBtn) {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const fileList = document.getElementById('file-list');
+        const domainSelect = document.getElementById('domain-select');
+        const subdomainInput = document.getElementById('subdomain-name');
+        const urlPreview = document.getElementById('url-preview-text');
+        const previewBtn = document.getElementById('preview-btn');
+        const statusMessage = document.getElementById('status-message');
+        const loader = deployBtn.querySelector('.loader');
+        const buttonText = deployBtn.querySelector('.button-text');
+        let uploadedFiles = [];
+
         const fetchDomains = async () => {
+<<<<<<< HEAD
             // Tampilkan loading text sesuai bahasa
+=======
+>>>>>>> 308b48f (Deployer)
             domainSelect.innerHTML = `<option value="">${translations[currentLang]['loading-domains']}</option>`;
             try {
                 const response = await fetch('/api/get-domains');
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Network response was not ok');
-                }
+                if (!response.ok) throw new Error('Network response was not ok');
                 const domainsData = await response.json();
                 
+<<<<<<< HEAD
                 // --- PERBAIKAN LOADING DOMAINS ---
+=======
+>>>>>>> 308b48f (Deployer)
                 domainSelect.innerHTML = `<option value="" disabled selected>${translations[currentLang]['select-domain-placeholder']}</option>`;
                 domainsData.forEach(domain => {
                     const option = document.createElement('option');
@@ -154,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } catch (error) {
                 console.error("Failed to fetch domains:", error);
-                showStatus(`Error fetching domains: ${error.message}`, 'error');
                 domainSelect.innerHTML = '<option value="">Could not load domains</option>';
             }
         };
@@ -164,31 +180,25 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadedFiles = [];
             deployBtn.disabled = true;
             previewBtn.disabled = true;
-
             for (const file of files) {
                 if (file.type === 'application/zip' || file.name.endsWith('.zip')) {
                     displayFile(` unpacking ${file.name}...`, 'fas fa-spinner fa-spin');
                     const zip = await JSZip.loadAsync(file);
                     fileList.innerHTML = '';
-
                     let fileEntries = Object.values(zip.files).filter(entry => !entry.dir);
                     let rootFolder = '';
-
                     if (fileEntries.length > 0) {
                         const firstPathParts = fileEntries[0].name.split('/');
                         if (firstPathParts.length > 1) {
                             const potentialRoot = firstPathParts[0] + '/';
-                            const allInRoot = fileEntries.every(entry => entry.name.startsWith(potentialRoot));
-                            if (allInRoot) {
+                            if (fileEntries.every(entry => entry.name.startsWith(potentialRoot))) {
                                 rootFolder = potentialRoot;
                             }
                         }
                     }
-
                     for (const entry of fileEntries) {
                         const fileData = await entry.async('blob');
                         const finalName = rootFolder ? entry.name.substring(rootFolder.length) : entry.name;
-
                         if (finalName) {
                             const originalFile = new File([fileData], finalName, { type: fileData.type });
                             if (files[0].type.includes('zip')) {
@@ -203,13 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayFile(file.name);
                 }
             }
-
             if (uploadedFiles.length > 0) {
                 deployBtn.disabled = false;
                 previewBtn.disabled = false;
             }
         };
-        
+
         const displayFile = (name, iconClass = 'fas fa-file') => {
             const li = document.createElement('li');
             li.innerHTML = `<i class="${iconClass}"></i> ${name}`;
@@ -218,8 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const openPreview = async () => {
             if (uploadedFiles.length === 0) return;
-
             const filesForStorage = await Promise.all(
+<<<<<<< HEAD
                 uploadedFiles.map(file => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
@@ -229,62 +238,56 @@ document.addEventListener('DOMContentLoaded', () => {
                         reader.readAsDataURL(file);
                     });
                 })
+=======
+                uploadedFiles.map(file => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve({ name: file.name, type: file.type, dataUrl: e.target.result });
+                    reader.readAsDataURL(file);
+                }))
+>>>>>>> 308b48f (Deployer)
             );
-            
             sessionStorage.setItem('previewFiles', JSON.stringify(filesForStorage));
             window.open('/preview', '_blank');
         };
-        
+
         const updateUrlPreview = () => {
             const subdomain = subdomainInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || '[project-name]';
             const selectedOption = domainSelect.options[domainSelect.selectedIndex];
-            
-            if (selectedOption && selectedOption.value) {
-                urlPreview.textContent = `${subdomain}.${selectedOption.textContent}`;
-            } else {
-                urlPreview.textContent = '...';
-            }
+            urlPreview.textContent = (selectedOption && selectedOption.value) ? `${subdomain}.${selectedOption.textContent}` : '...';
         };
 
         const deployProject = async () => {
             const subdomain = subdomainInput.value.trim().toLowerCase();
             const domainId = domainSelect.value;
-            const selectedOption = domainSelect.options[domainSelect.selectedIndex];
-            
             if (uploadedFiles.length === 0 || !subdomain || !domainId) {
                 showStatus('Please upload files, provide a project name, and select a domain.', 'error');
                 return;
             }
-
             setLoadingState(true);
-
             const formData = new FormData();
             formData.append('subdomain', subdomain);
             formData.append('domainId', domainId);
-            formData.append('domainName', selectedOption.textContent);
-            
-            let isZipUpload = false;
-            if(uploadedFiles[0].zipOrigin) {
+            formData.append('domainName', domainSelect.options[domainSelect.selectedIndex].textContent);
+            let isZipUpload = !!uploadedFiles[0].zipOrigin;
+            if (isZipUpload) {
                 formData.append('files', uploadedFiles[0].zipOrigin);
-                isZipUpload = true;
+                formData.append('isZip', 'true');
             }
-            
             uploadedFiles.forEach(file => {
                 formData.append('extracted_files', file, file.name);
             });
-            
-            if(isZipUpload) formData.append('isZip', 'true');
-
             try {
                 const response = await fetch('/api/deploy', { method: 'POST', body: formData });
                 const result = await response.json();
+<<<<<<< HEAD
 
                 if (!response.ok) throw new Error(result.message || 'An unknown error occurred on the server.');
                 
+=======
+                if (!response.ok) throw new Error(result.message);
+>>>>>>> 308b48f (Deployer)
                 showStatus(`Success! Your site is live at: <a href="https://${result.finalUrl}" target="_blank">${result.finalUrl}</a>`, 'success');
-
             } catch (error) {
-                console.error('Deployment Error:', error);
                 showStatus(`Error: ${error.message}`, 'error');
             } finally {
                 setLoadingState(false);
@@ -296,7 +299,10 @@ document.addEventListener('DOMContentLoaded', () => {
             statusMessage.className = type;
         };
 
+<<<<<<< HEAD
         // --- PERBAIKAN BUG LOADING TOMBOL DEPLOY ---
+=======
+>>>>>>> 308b48f (Deployer)
         const setLoadingState = (isLoading) => {
             if (isLoading) {
                 deployBtn.disabled = true;
@@ -307,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 deployBtn.classList.remove('loading');
                 loader.hidden = true;
                 buttonText.textContent = translations[currentLang]['deploy-button'];
+<<<<<<< HEAD
                 // Hanya aktifkan tombol jika ada file yang diupload.
                 deployBtn.disabled = uploadedFiles.length === 0;
             }
@@ -314,13 +321,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // --- Event Listeners ---
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+=======
+                deployBtn.disabled = uploadedFiles.length === 0;
+            }
+        };
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+>>>>>>> 308b48f (Deployer)
         dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
-        dropZone.addEventListener('drop', (e) => {
+        dropZone.addEventListener('drop', e => {
             e.preventDefault();
             dropZone.classList.remove('drag-over');
             handleFiles(e.dataTransfer.files);
         });
-
         browseBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => handleFiles(fileInput.files));
         previewBtn.addEventListener('click', openPreview);
@@ -328,7 +341,10 @@ document.addEventListener('DOMContentLoaded', () => {
         domainSelect.addEventListener('change', updateUrlPreview);
         deployBtn.addEventListener('click', deployProject);
 
+<<<<<<< HEAD
         // --- Initial Load ---
+=======
+>>>>>>> 308b48f (Deployer)
         setLanguage('en');
         fetchDomains();
     }
