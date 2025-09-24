@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-// script.js (Lengkap dengan perbaikan bug)
-=======
-// script.js (Lengkap dengan perbaikan error kritis)
->>>>>>> 308b48f (Deployer)
-
 // --- Language Data ---
 const translations = {
     en: {
