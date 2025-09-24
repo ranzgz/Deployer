@@ -1,4 +1,4 @@
-// script.js (Lengkap)
+// script.js (Lengkap dengan perbaikan bug)
 
 // --- Language Data ---
 const translations = {
@@ -15,11 +15,13 @@ const translations = {
         "project-name-label": "Choose a Project Name (Subdomain)",
         "domain-select-label": "Select a Domain",
         "loading-domains": "Loading domains...",
+        "select-domain-placeholder": "-- Select a domain --",
         "url-preview-title": "Your new website URL will be:",
         "step3-title": "Launch Your Website",
         "launch-info": "Ready to go live? Clicking deploy will automatically upload your files to Vercel and connect your chosen domain.",
         "deploy-button": "Deploy Project",
-        "footer-text": "&copy; 2023 FishNemo - Deployer. Built with ❤️ | <a href=\"/docs\" style=\"color: var(--secondary-text-color);\">API Docs</a>"
+        "deploy-loading-text": "Deploying...",
+        "footer-text": "&copy; 2024 FishNemo - Deployer. Built with ❤️ | <a href=\"/docs\" style=\"color: var(--secondary-text-color);\">API Docs</a>"
     },
     id: {
         "header-subtitle": "Deploy proyek statis Anda dengan subdomain kustom dalam hitungan detik.",
@@ -34,11 +36,13 @@ const translations = {
         "project-name-label": "Pilih Nama Proyek (Subdomain)",
         "domain-select-label": "Pilih sebuah Domain",
         "loading-domains": "Memuat domain...",
+        "select-domain-placeholder": "-- Pilih sebuah domain --",
         "url-preview-title": "URL website baru Anda adalah:",
         "step3-title": "Luncurkan Website Anda",
         "launch-info": "Siap untuk online? Klik deploy akan secara otomatis mengunggah file Anda ke Vercel dan menghubungkan domain pilihan Anda.",
         "deploy-button": "Deploy Proyek",
-        "footer-text": "&copy; 2023 FishNemo - Deployer. Dibuat dengan ❤️ | <a href=\"/docs\" style=\"color: var(--secondary-text-color);\">API Docs</a>"
+        "deploy-loading-text": "Mendeploy...",
+        "footer-text": "&copy; 2024 FishNemo - Deployer. Dibuat dengan ❤️ | <a href=\"/docs\" style=\"color: var(--secondary-text-color);\">API Docs</a>"
     }
 };
 
@@ -59,6 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
         langToggleContainer.querySelectorAll('button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.lang === lang);
         });
+        // Perbarui placeholder yang tidak menggunakan data-translate
+        if (domainSelect) {
+            const firstOption = domainSelect.querySelector('option');
+            if (firstOption && firstOption.value === "") {
+                 firstOption.textContent = translations[lang]['select-domain-placeholder'];
+            }
+        }
     };
 
     if (langToggleContainer) {
@@ -123,6 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Functions (Hanya untuk halaman deploy) ---
     if (document.body.contains(deployBtn)) {
         const fetchDomains = async () => {
+            // Tampilkan loading text sesuai bahasa
+            domainSelect.innerHTML = `<option value="">${translations[currentLang]['loading-domains']}</option>`;
             try {
                 const response = await fetch('/api/get-domains');
                 if (!response.ok) {
@@ -131,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const domainsData = await response.json();
                 
-                domainSelect.innerHTML = `<option value="" disabled selected>${translations[currentLang]['loading-domains']}</option>`;
+                // --- PERBAIKAN LOADING DOMAINS ---
+                domainSelect.innerHTML = `<option value="" disabled selected>${translations[currentLang]['select-domain-placeholder']}</option>`;
                 domainsData.forEach(domain => {
                     const option = document.createElement('option');
                     option.value = domain.id;
@@ -167,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             const allInRoot = fileEntries.every(entry => entry.name.startsWith(potentialRoot));
                             if (allInRoot) {
                                 rootFolder = potentialRoot;
-                                console.log(`Detected single root folder in ZIP: "${rootFolder}"`);
                             }
                         }
                     }
@@ -211,11 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.onload = (event) => {
-                            resolve({
-                                name: file.name,
-                                type: file.type,
-                                dataUrl: event.target.result
-                            });
+                            resolve({ name: file.name, type: file.type, dataUrl: event.target.result });
                         };
                         reader.readAsDataURL(file);
                     });
@@ -267,16 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(isZipUpload) formData.append('isZip', 'true');
 
             try {
-                const response = await fetch('/api/deploy', {
-                    method: 'POST',
-                    body: formData,
-                });
-
+                const response = await fetch('/api/deploy', { method: 'POST', body: formData });
                 const result = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(result.message || 'An unknown error occurred on the server.');
-                }
+                if (!response.ok) throw new Error(result.message || 'An unknown error occurred on the server.');
                 
                 showStatus(`Success! Your site is live at: <a href="https://${result.finalUrl}" target="_blank">${result.finalUrl}</a>`, 'success');
 
@@ -293,23 +296,23 @@ document.addEventListener('DOMContentLoaded', () => {
             statusMessage.className = type;
         };
 
-        // --- PERBAIKAN BUG LOADING ---
+        // --- PERBAIKAN BUG LOADING TOMBOL DEPLOY ---
         const setLoadingState = (isLoading) => {
             if (isLoading) {
                 deployBtn.disabled = true;
                 deployBtn.classList.add('loading');
                 loader.hidden = false;
-                buttonText.textContent = ''; // Kosongkan teks saat loading
+                buttonText.textContent = translations[currentLang]['deploy-loading-text'];
             } else {
-                // Jangan langsung enable. Enable hanya jika ada file.
-                deployBtn.disabled = uploadedFiles.length === 0;
                 deployBtn.classList.remove('loading');
                 loader.hidden = true;
                 buttonText.textContent = translations[currentLang]['deploy-button'];
+                // Hanya aktifkan tombol jika ada file yang diupload.
+                deployBtn.disabled = uploadedFiles.length === 0;
             }
         };
         
-        // Event Listeners for Deploy Page
+        // --- Event Listeners ---
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
         dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
         dropZone.addEventListener('drop', (e) => {
@@ -325,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         domainSelect.addEventListener('change', updateUrlPreview);
         deployBtn.addEventListener('click', deployProject);
 
-        // Initial Load for Deploy Page
+        // --- Initial Load ---
         setLanguage('en');
         fetchDomains();
     }
