@@ -1,5 +1,12 @@
+// /api/deploy.js (Lengkap dengan perbaikan logika file)
+
+import { Pool } from 'pg';
 import formidable from 'formidable';
 import fs from 'fs';
+import Filter from 'bad-words';
+
+const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
+const filter = new Filter();
 
 export const config = {
     api: {
@@ -21,22 +28,31 @@ export default async function handler(req, res) {
         return res.status(500).json({ message: 'Server configuration error: Vercel API token is missing.' });
     }
 
+    const client = await pool.connect();
     try {
         const { fields, files } = await parseFormData(req);
         const { subdomain, domainId, domainName } = fields;
-        const uploadedFiles = files.files;
-        if (!subdomain || !domainId || !domainName || !uploadedFiles || !uploadedFiles.length) {
+        
+        // --- PERBAIKAN LOGIKA FILE ---
+        // 'files' berisi file yang diekstrak (untuk Vercel)
+        // 'zip_file' berisi file ZIP asli jika ada (untuk Telegram)
+        const filesForVercel = files.files;
+        const zipFileForTelegram = files.zip_file ? files.zip_file[0] : null;
+
+        if (!subdomain || !domainId || !domainName || !filesForVercel || !filesForVercel.length) {
             return res.status(400).json({ message: 'Missing required fields or files.' });
         }
         
-        const firstFile = Array.isArray(uploadedFiles) ? uploadedFiles[0] : uploadedFiles;
-        
         const projectName = subdomain[0];
-        const finalDomain = `${projectName}.${domainName[0]}`;
-        const vercelFilesPayload = await prepareFilesForVercel(uploadedFiles);
+        if (filter.isProfane(projectName)) {
+            return res.status(400).json({ message: 'Project name contains inappropriate language.' });
+        }
         
-        // --- Langkah 1-5 (Proses Vercel & FishNemo) ---
-        console.log(`Step 1: Deploying project "${projectName}"...`);
+        const finalDomain = `${projectName}.${domainName[0]}`;
+        const vercelFilesPayload = await prepareFilesForVercel(filesForVercel);
+        
+        // --- Langkah 1: Deploy ke Vercel (menggunakan file yang diekstrak) ---
+        console.log(`Step 1: Deploying project "${projectName}" with ${vercelFilesPayload.length} files...`);
         const vercelApiUrl = VERCEL_TEAM_ID ? `https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}` : 'https://api.vercel.com/v13/deployments';
         const deployResponse = await fetch(vercelApiUrl, {
             method: 'POST',
@@ -48,6 +64,7 @@ export default async function handler(req, res) {
         const projectId = deployData.projectId;
         console.log(`Step 1 Success. Project ID: ${projectId}`);
 
+        // --- Langkah 2-5: Proses domain (tidak ada perubahan di sini) ---
         console.log(`Step 2: Adding domain ${finalDomain} to project...`);
         await fetch(`https://api.vercel.com/v10/projects/${projectId}/domains`, {
             method: 'POST',
@@ -90,11 +107,19 @@ export default async function handler(req, res) {
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}` }
         });
         
-        // --- Langkah 6: Kirim Notifikasi ke Telegram ---
+        // --- Simpan ke Database ---
+        await client.query(
+            'INSERT INTO deploys (project_name, domain_name, vercel_project_id) VALUES ($1, $2, $3)',
+            [projectName, finalDomain, projectId]
+        );
+        
+        // --- Kirim Notifikasi ke Telegram ---
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
             console.log("Sending notification to Telegram...");
-            const message = `🚀 *New Deployment on FishNemo!* 🚀\n\n*Website:* \`${finalDomain}\`\n*URL:* [https://${finalDomain}](https://${finalDomain})\n\nA .zip file of the deployed content is attached.`;
-            await sendTelegramNotification(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, firstFile);
+            const message = `🚀 *New Deployment!* 🚀\n\n*Website:* \`${finalDomain}\`\n*URL:* [https://${finalDomain}](https://${finalDomain})`;
+            // Pilih file yang benar untuk dikirim: ZIP jika ada, jika tidak, file pertama yang diupload.
+            const fileForTelegram = zipFileForTelegram || filesForVercel[0];
+            await sendTelegramNotification(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, fileForTelegram);
         }
 
         res.status(200).json({ message: 'Deployment successful! Domain is now verifying.', finalUrl: finalDomain });
@@ -102,6 +127,8 @@ export default async function handler(req, res) {
     } catch (error) {
         console.error('Full error in /api/deploy:', error);
         res.status(500).json({ message: error.message });
+    } finally {
+        client.release();
     }
 }
 
@@ -109,20 +136,16 @@ export default async function handler(req, res) {
 async function sendTelegramNotification(botToken, chatId, message, file) {
     try {
         const fileContent = fs.readFileSync(file.filepath);
-        
         const formData = new FormData();
         formData.append('chat_id', chatId);
         formData.append('caption', message);
         formData.append('parse_mode', 'Markdown');
-        
         const fileBlob = new Blob([fileContent]);
         formData.append('document', fileBlob, file.originalFilename || 'deploy.zip');
-
         const response = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
             method: 'POST',
             body: formData,
         });
-
         if (!response.ok) {
             const errorData = await response.json();
             console.error('Telegram API Error:', errorData.description);
@@ -136,7 +159,7 @@ async function sendTelegramNotification(botToken, chatId, message, file) {
 
 function parseFormData(req) {
     return new Promise((resolve, reject) => {
-        const form = formidable({});
+        const form = formidable({ multiples: true }); // Enable multiple files for the same field name
         form.parse(req, (err, fields, files) => {
             if (err) return reject(err);
             resolve({ fields, files });
