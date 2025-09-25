@@ -11,8 +11,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.7",
+    "bad-words": "^3.0.4",
     "formidable": "^3.5.1",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "vercel": "^32.5.3"
