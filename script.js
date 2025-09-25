@@ -1,4 +1,4 @@
-// script.js (Lengkap dengan perbaikan logika upload ZIP)
+// script.js (Lengkap dengan mekanisme retry untuk fetchDomains)
 
 // --- Language Data ---
 const translations = {
@@ -14,8 +14,9 @@ const translations = {
         "step2-title": "Configure Your Domain",
         "project-name-label": "Choose a Project Name (Subdomain)",
         "domain-select-label": "Select a Domain",
-        "loading-domains": "Loading domains...",
+        "loading-domains": "Loading domains... (this may take a moment)",
         "select-domain-placeholder": "-- Select a domain --",
+        "fetch-domains-error": "Could not load domains. Please try refreshing.",
         "url-preview-title": "Your new website URL will be:",
         "step3-title": "Launch Your Website",
         "launch-info": "Ready to go live? Clicking deploy will automatically upload your files to Vercel and connect your chosen domain.",
@@ -35,8 +36,9 @@ const translations = {
         "step2-title": "Konfigurasi Domain Anda",
         "project-name-label": "Pilih Nama Proyek (Subdomain)",
         "domain-select-label": "Pilih sebuah Domain",
-        "loading-domains": "Memuat domain...",
+        "loading-domains": "Memuat domain... (ini mungkin butuh beberapa saat)",
         "select-domain-placeholder": "-- Pilih sebuah domain --",
+        "fetch-domains-error": "Tidak dapat memuat domain. Silakan coba muat ulang.",
         "url-preview-title": "URL website baru Anda adalah:",
         "step3-title": "Luncurkan Website Anda",
         "launch-info": "Siap untuk online? Klik deploy akan secara otomatis mengunggah file Anda ke Vercel dan menghubungkan domain pilihan Anda.",
@@ -79,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const musicControl = document.getElementById('music-control');
     if (musicControl) {
-        // ... (Logika musik tetap sama)
+        // ... (Music logic remains the same)
     }
 
     const deployBtn = document.getElementById('deploy-btn');
@@ -96,21 +98,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const loader = deployBtn.querySelector('.loader');
         const buttonText = deployBtn.querySelector('.button-text');
         let uploadedFiles = [];
-        let originalZipFile = null; // Variabel baru untuk menyimpan file ZIP asli
+        let originalZipFile = null;
 
-        const fetchDomains = async () => { /* ... (fungsi ini tetap sama) ... */ };
-        
+        const fetchDomainsWithRetry = async (retries = 3, delay = 2000) => {
+            domainSelect.disabled = true;
+            domainSelect.innerHTML = `<option value="">${translations[currentLang]['loading-domains']}</option>`;
+            
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch('/api/get-domains');
+                    if (!response.ok) {
+                        throw new Error(`Server responded with status ${response.status}`);
+                    }
+                    
+                    const domainsData = await response.json();
+
+                    if (!domainsData || domainsData.length === 0) {
+                        throw new Error("API returned empty or invalid data.");
+                    }
+                    
+                    domainSelect.innerHTML = `<option value="" disabled selected>${translations[currentLang]['select-domain-placeholder']}</option>`;
+                    domainsData.forEach(domain => {
+                        const option = document.createElement('option');
+                        option.value = domain.id;
+                        option.textContent = domain.name;
+                        domainSelect.appendChild(option);
+                    });
+                    domainSelect.disabled = false;
+                    return;
+
+                } catch (error) {
+                    console.warn(`Attempt ${i + 1} to fetch domains failed:`, error.message);
+                    if (i < retries - 1) {
+                        await new Promise(res => setTimeout(res, delay));
+                    } else {
+                        domainSelect.innerHTML = `<option value="">${translations[currentLang]['fetch-domains-error']}</option>`;
+                        domainSelect.disabled = false;
+                    }
+                }
+            }
+        };
+
         const handleFiles = async (files) => {
             fileList.innerHTML = '';
             uploadedFiles = [];
-            originalZipFile = null; // Reset setiap kali upload baru
+            originalZipFile = null;
             deployBtn.disabled = true;
             previewBtn.disabled = true;
-
-            const file = files[0]; // Kita hanya proses satu file ZIP atau beberapa file biasa
-
+            const file = files[0];
             if (file && (file.type === 'application/zip' || file.name.endsWith('.zip'))) {
-                originalZipFile = file; // Simpan file ZIP asli
+                originalZipFile = file;
                 displayFile(` unpacking ${file.name}...`, 'fas fa-spinner fa-spin');
                 const zip = await JSZip.loadAsync(file);
                 fileList.innerHTML = '';
@@ -120,9 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const firstPathParts = fileEntries[0].name.split('/');
                     if (firstPathParts.length > 1) {
                         const potentialRoot = firstPathParts[0] + '/';
-                        if (fileEntries.every(entry => entry.name.startsWith(potentialRoot))) {
-                            rootFolder = potentialRoot;
-                        }
+                        if (fileEntries.every(entry => entry.name.startsWith(potentialRoot))) rootFolder = potentialRoot;
                     }
                 }
                 for (const entry of fileEntries) {
@@ -135,7 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } else {
-                // Handle multiple non-zip files
                 for (const f of files) {
                     uploadedFiles.push(f);
                     displayFile(f.name);
@@ -152,10 +186,26 @@ document.addEventListener('DOMContentLoaded', () => {
             li.innerHTML = `<i class="${iconClass}"></i> ${name}`;
             fileList.appendChild(li);
         };
-        
-        const openPreview = async () => { /* ... (fungsi ini tetap sama) ... */ };
-        const updateUrlPreview = () => { /* ... (fungsi ini tetap sama) ... */ };
-        
+
+        const openPreview = async () => {
+            if (uploadedFiles.length === 0) return;
+            const filesForStorage = await Promise.all(
+                uploadedFiles.map(file => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve({ name: file.name, type: file.type, dataUrl: e.target.result });
+                    reader.readAsDataURL(file);
+                }))
+            );
+            sessionStorage.setItem('previewFiles', JSON.stringify(filesForStorage));
+            window.open('/preview', '_blank');
+        };
+
+        const updateUrlPreview = () => {
+            const subdomain = subdomainInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || '[project-name]';
+            const selectedOption = domainSelect.options[domainSelect.selectedIndex];
+            urlPreview.textContent = (selectedOption && selectedOption.value) ? `${subdomain}.${selectedOption.textContent}` : '...';
+        };
+
         const deployProject = async () => {
             const subdomain = subdomainInput.value.trim().toLowerCase();
             const domainId = domainSelect.value;
@@ -168,20 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('subdomain', subdomain);
             formData.append('domainId', domainId);
             formData.append('domainName', domainSelect.options[domainSelect.selectedIndex].textContent);
-            
-            // --- PERBAIKAN LOGIKA PENGIRIMAN ---
-            // 1. Kirim file ZIP asli jika ada, dengan nama 'zip_file'
             if (originalZipFile) {
                 formData.append('zip_file', originalZipFile);
             }
-            
-            // 2. Selalu kirim semua file yang sudah diekstrak (atau file asli jika bukan zip)
-            //    dengan nama 'files'
             uploadedFiles.forEach(file => {
                 formData.append('files', file, file.name);
             });
-            // ------------------------------------
-
             try {
                 const response = await fetch('/api/deploy', { method: 'POST', body: formData });
                 const result = await response.json();
@@ -193,11 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 setLoadingState(false);
             }
         };
-
-        const showStatus = (message, type) => { /* ... (fungsi ini tetap sama) ... */ };
         
+        const showStatus = (message, type) => {
+            statusMessage.innerHTML = message;
+            statusMessage.className = type;
+        };
+
         const setLoadingState = (isLoading) => {
-             if (isLoading) {
+            if (isLoading) {
                 deployBtn.disabled = true;
                 deployBtn.classList.add('loading');
                 loader.hidden = false;
@@ -209,8 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 deployBtn.disabled = uploadedFiles.length === 0;
             }
         };
-        
-        // --- Event Listeners (disingkat, karena tidak berubah) ---
+
         dropZone.addEventListener('dragover', e => e.preventDefault());
         dropZone.addEventListener('drop', e => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
         browseBtn.addEventListener('click', () => fileInput.click());
@@ -219,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
         subdomainInput.addEventListener('input', updateUrlPreview);
         domainSelect.addEventListener('change', updateUrlPreview);
         deployBtn.addEventListener('click', deployProject);
-
+        
         setLanguage('en');
-        fetchDomains();
+        fetchDomainsWithRetry();
     }
 });
