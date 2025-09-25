@@ -1,4 +1,4 @@
-// /api/deploy.js (Lengkap dengan perbaikan logika file)
+// /api/deploy.js (Lengkap dengan perbaikan penanganan file tunggal vs. ganda)
 
 import { Pool } from 'pg';
 import formidable from 'formidable';
@@ -33,13 +33,12 @@ export default async function handler(req, res) {
         const { fields, files } = await parseFormData(req);
         const { subdomain, domainId, domainName } = fields;
         
-        // --- PERBAIKAN LOGIKA FILE ---
-        // 'files' berisi file yang diekstrak (untuk Vercel)
-        // 'zip_file' berisi file ZIP asli jika ada (untuk Telegram)
-        const filesForVercel = files.files;
-        const zipFileForTelegram = files.zip_file ? files.zip_file[0] : null;
+        // --- PERBAIKAN KRITIS UNTUK PENANGANAN FILE ---
+        // 'formidable' memberikan objek jika satu file, dan array jika banyak. Kita normalkan menjadi array.
+        const filesForVercel = Array.isArray(files.files) ? files.files : [files.files].filter(Boolean);
+        const zipFileForTelegram = files.zip_file ? (Array.isArray(files.zip_file) ? files.zip_file[0] : files.zip_file) : null;
 
-        if (!subdomain || !domainId || !domainName || !filesForVercel || !filesForVercel.length) {
+        if (!subdomain || !domainId || !domainName || !filesForVercel || filesForVercel.length === 0) {
             return res.status(400).json({ message: 'Missing required fields or files.' });
         }
         
@@ -51,7 +50,7 @@ export default async function handler(req, res) {
         const finalDomain = `${projectName}.${domainName[0]}`;
         const vercelFilesPayload = await prepareFilesForVercel(filesForVercel);
         
-        // --- Langkah 1: Deploy ke Vercel (menggunakan file yang diekstrak) ---
+        // --- Langkah 1: Deploy ke Vercel ---
         console.log(`Step 1: Deploying project "${projectName}" with ${vercelFilesPayload.length} files...`);
         const vercelApiUrl = VERCEL_TEAM_ID ? `https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}` : 'https://api.vercel.com/v13/deployments';
         const deployResponse = await fetch(vercelApiUrl, {
@@ -64,7 +63,7 @@ export default async function handler(req, res) {
         const projectId = deployData.projectId;
         console.log(`Step 1 Success. Project ID: ${projectId}`);
 
-        // --- Langkah 2-5: Proses domain (tidak ada perubahan di sini) ---
+        // --- Langkah 2-5: Proses domain ---
         console.log(`Step 2: Adding domain ${finalDomain} to project...`);
         await fetch(`https://api.vercel.com/v10/projects/${projectId}/domains`, {
             method: 'POST',
@@ -117,9 +116,10 @@ export default async function handler(req, res) {
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
             console.log("Sending notification to Telegram...");
             const message = `🚀 *New Deployment!* 🚀\n\n*Website:* \`${finalDomain}\`\n*URL:* [https://${finalDomain}](https://${finalDomain})`;
-            // Pilih file yang benar untuk dikirim: ZIP jika ada, jika tidak, file pertama yang diupload.
             const fileForTelegram = zipFileForTelegram || filesForVercel[0];
-            await sendTelegramNotification(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, fileForTelegram);
+            if (fileForTelegram) {
+                 await sendTelegramNotification(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message, fileForTelegram);
+            }
         }
 
         res.status(200).json({ message: 'Deployment successful! Domain is now verifying.', finalUrl: finalDomain });
@@ -159,7 +159,7 @@ async function sendTelegramNotification(botToken, chatId, message, file) {
 
 function parseFormData(req) {
     return new Promise((resolve, reject) => {
-        const form = formidable({ multiples: true }); // Enable multiple files for the same field name
+        const form = formidable({ multiples: true });
         form.parse(req, (err, fields, files) => {
             if (err) return reject(err);
             resolve({ fields, files });
@@ -169,8 +169,8 @@ function parseFormData(req) {
 
 async function prepareFilesForVercel(files) {
     const payload = [];
-    const fileArray = Array.isArray(files) ? files : [files];
-    for (const file of fileArray) {
+    // Fungsi ini sekarang selalu menerima array karena sudah dinormalkan
+    for (const file of files) {
         const fileContent = fs.readFileSync(file.filepath);
         payload.push({
             file: file.originalFilename,
