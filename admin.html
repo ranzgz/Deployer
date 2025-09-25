@@ -13,7 +13,7 @@
     <div class="container" style="max-width: 1000px; animation: fadeIn 1s ease-in-out;">
         <header>
             <h1><span class="gradient-text">Admin</span> Dashboard</h1>
-            <p style="color: var(--secondary-text-color);">Manage all deployed projects.</p>
+            <p style="color: var(--secondary-text-color);">Manage all deployed projects directly from Vercel.</p>
         </header>
 
         <div id="login-section" class="step-card admin-login">
@@ -27,14 +27,13 @@
 
         <div id="dashboard-section" class="step-card" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>All Deployments</h2>
+                <h2>All Deployments (<span id="total-deploys">0</span>)</h2>
                 <button id="refresh-btn" class="browse-button">Refresh</button>
             </div>
             <div class="admin-table-container">
                 <table id="deploys-table" class="admin-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Project Name</th>
                             <th>Domain</th>
                             <th>Deployed At</th>
@@ -42,8 +41,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Data akan diisi oleh JS -->
-                        <tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>
+                        <tr><td colspan="4" style="text-align: center;">Loading data...</td></tr>
                     </tbody>
                 </table>
             </div>
