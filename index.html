@@ -3,41 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FishNemo - Deployer | Deploy Static Sites Instantly</title>
-    <link rel="stylesheet" href="style.css">
+    <title>FishNemo Deployer | Deploy Static Sites Instantly</title>
+    <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- PERBAIKAN FONT AWESOME -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        /* Styles khusus untuk landing page */
         .hero {
             text-align: center;
-            padding: 100px 20px;
+            padding: 120px 20px 80px 20px;
             animation: fadeIn 1s ease-in-out;
         }
         .hero h1 {
-            font-size: 3.5rem;
+            font-size: 3.8rem;
             font-weight: 700;
+            line-height: 1.2;
             margin-bottom: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .hero p {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: var(--secondary-text-color);
-            max-width: 600px;
-            margin: 0 auto 30px auto;
+            max-width: 650px;
+            margin: 0 auto 40px auto;
         }
         .hero-buttons {
             display: flex;
             justify-content: center;
             gap: 20px;
+            flex-wrap: wrap;
         }
         .hero-buttons .btn {
-            padding: 15px 30px;
-            border-radius: 8px;
+            padding: 15px 35px;
+            border-radius: 10px;
             text-decoration: none;
             font-weight: 600;
+            font-size: 1.1rem;
             transition: all 0.3s ease;
         }
         .hero-buttons .btn-primary {
@@ -45,8 +49,8 @@
             color: white;
         }
         .hero-buttons .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 25px rgba(236, 72, 153, 0.25);
         }
         .hero-buttons .btn-secondary {
             background: var(--card-bg-color);
@@ -54,50 +58,64 @@
             color: var(--primary-text-color);
         }
         .hero-buttons .btn-secondary:hover {
-            background: var(--bg-color);
+            border-color: #a5b4fc;
+            color: #a5b4fc;
         }
-        .features-section {
+
+        .how-it-works {
             padding: 80px 20px;
         }
         .section-title {
             text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 50px;
         }
-        .section-subtitle {
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            position: relative;
+            flex-wrap: wrap;
+        }
+        .step {
+            flex: 1;
             text-align: center;
-            color: var(--secondary-text-color);
-            max-width: 700px;
-            margin: 0 auto 50px auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
         }
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
+        .step-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--card-bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px auto;
+            font-size: 2.5rem;
         }
-        .feature-card {
-            background-color: var(--card-bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 30px;
-            transition: all 0.3s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 25px rgba(79, 70, 229, 0.2);
-        }
-        .feature-icon {
-            font-size: 2rem;
-            color: #a5b4fc;
-            margin-bottom: 20px;
-        }
-        .feature-card h3 {
+        .step h3 {
             font-size: 1.5rem;
             margin-bottom: 10px;
         }
-        .feature-card p {
+        .step p {
             color: var(--secondary-text-color);
-            line-height: 1.6;
+        }
+        .steps-line {
+            position: absolute;
+            top: 40px;
+            left: 15%;
+            right: 15%;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+        @media (max-width: 768px) {
+            .steps-line { display: none; }
+            .hero h1 { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -105,53 +123,38 @@
     <div class="container" style="max-width: 1200px;">
         <main>
             <section class="hero">
-                <h1>Deploy Static Websites <span class="gradient-text">Instantly</span></h1>
-                <p>Upload your files, choose a subdomain, and get your project online in seconds with FishNemo Deployer.</p>
+                <h1>The Simplest Way to Go <span class="gradient-text">Live</span></h1>
+                <p>Drag, drop, and deploy. Turn your static projects into live websites in seconds, powered by Vercel.</p>
                 <div class="hero-buttons">
-                    <a href="/deploy" class="btn btn-primary">Deploy Now</a>
-                    <a href="/docs" class="btn btn-secondary">View Documentation</a>
+                    <a href="/deploy" class="btn btn-primary">Start Deploying Now</a>
+                    <a href="/docs" class="btn btn-secondary">API Documentation</a>
                 </div>
             </section>
             
-            <section class="features-section">
-                <h2 class="section-title">Fitur Unggulan</h2>
-                <p class="section-subtitle">FishNemo Deployer menyediakan berbagai fitur canggih untuk memenuhi kebutuhan pengembangan Anda.</p>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">⚡️</div>
-                        <h3>Cepat & Andal</h3>
-                        <p>Sistem kami dioptimalkan untuk kecepatan tinggi dan ketersediaan 99.9%, memastikan aplikasi Anda selalu berjalan lancar.</p>
+            <section class="how-it-works">
+                <h2 class="section-title">How It Works</h2>
+                <div class="steps-container">
+                    <div class="steps-line"></div>
+                    <div class="step">
+                        <div class="step-icon"><i class="fas fa-upload"></i></div>
+                        <h3>1. Upload</h3>
+                        <p>Drag and drop your project files or a single .zip archive.</p>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🛡️</div>
-                        <h3>Keamanan Terjamin</h3>
-                        <p>Dengan backend yang aman, API key Anda terlindungi dan tidak akan pernah terekspos di sisi klien.</p>
+                    <div class="step">
+                        <div class="step-icon"><i class="fas fa-eye"></i></div>
+                        <h3>2. Preview</h3>
+                        <p>Instantly preview your website, including interactive JavaScript, JSX, and TSX components.</p>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">&lt;/&gt;</div>
-                        <h3>Mudah Diintegrasikan</h3>
-                        <p>Dokumentasi yang jelas dan contoh kode siap pakai untuk mempercepat proses pengembangan aplikasi Anda.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🔄</div>
-                        <h3>Terupdate</h3>
-                        <p>Platform selalu diperbarui dengan fitur terbaru sehingga Anda tidak ketinggalan teknologi.</p>
-                    </div>
-                     <div class="feature-card">
-                        <div class="feature-icon">🌿</div>
-                        <h3>Ekosistem Bersih & Ringan</h3>
-                        <p>Desain API yang efisien, bebas lag, dan mudah dioperasikan dalam semua lingkungan pengembangan.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🎧</div>
-                        <h3>Layanan 24/7</h3>
-                        <p>Sistem otomatis kami siap membantu kapan saja, memastikan proyek Anda selalu berjalan lancar tanpa hambatan.</p>
+                    <div class="step">
+                        <div class="step-icon"><i class="fas fa-rocket"></i></div>
+                        <h3>3. Deploy</h3>
+                        <p>Give your project a name and launch it to the world on a unique Vercel URL.</p>
                     </div>
                 </div>
             </section>
         </main>
-        <footer>
-            <p>&copy; 2024 FishNemo Deployer. All rights reserved.</p>
+        <footer style="padding: 40px 0;">
+            <p>&copy; 2024 FishNemo Deployer. All rights reserved. | <a href="/admin" style="color: var(--secondary-text-color);">Admin</a> | <a href="/docs" style="color: var(--secondary-text-color);">API Docs</a></p>
         </footer>
     </div>
 </body>
