@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Website Preview - FishNemo Deployer</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Style tambahan khusus untuk halaman preview */
         .preview-container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 95%;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
-
         .preview-controls {
             background-color: var(--card-bg-color);
             border: 1px solid var(--border-color);
@@ -27,7 +26,6 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .preview-controls a {
             background: var(--accent-gradient);
             color: white;
@@ -37,39 +35,37 @@
             font-weight: 500;
             transition: transform 0.2s, box-shadow 0.3s;
         }
-
         .preview-controls a:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
         }
-
         #preview-frame {
             width: 100%;
-            height: 75vh;
+            height: 80vh;
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            background-color: white; /* Latar belakang putih saat loading */
+            background-color: white;
         }
     </style>
 </head>
 <body>
-
     <div class="container preview-container">
         <header>
-            <h1><span class="gradient-text">Website</span> Preview</h1>
-            <p>This is a live preview of your uploaded project files.</p>
+            <h1><span class="gradient-text">Live</span> Preview</h1>
+            <p>This is an interactive preview of your project. JSX and TSX are supported.</p>
         </header>
 
         <div class="preview-controls">
-            <p>Previewing your project...</p>
+            <p id="preview-status">Rendering your project...</p>
             <a href="/deploy">← Back to Deployer</a>
         </div>
 
-        <iframe id="preview-frame" title="Website Preview"></iframe>
-
+        <iframe id="preview-frame" title="Website Preview" sandbox="allow-scripts allow-same-origin"></iframe>
     </div>
-
+    
+    <!-- Library untuk Unzip dan Transpile JSX/TSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="preview.js"></script>
+    <script src="https://unpkg.com/sucrase/dist/index.js"></script>
+    <script src="/preview.js"></script>
 </body>
 </html>
