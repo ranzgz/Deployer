@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FishNemo - Deployer</title>
+    <title>Deploy Project - FishNemo Deployer</title>
     <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- PERBAIKAN FONT AWESOME -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Menambahkan JSZip secara eksplisit -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
@@ -22,7 +20,6 @@
             <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75zm9 0a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75z" clip-rule="evenodd" />
         </svg>
     </div>
-    <!-- PERBAIKAN LINK MUSIK -->
     <audio id="background-music" loop src="https://cdn.pixabay.com/download/audio/2022/10/18/audio_8637083071.mp3"></audio>
 
     <div class="container">
@@ -43,7 +40,7 @@
                     <div class="drop-zone-prompt">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p data-translate="dropzone-title">Drag & Drop your files here</p>
-                        <p class="small-text" data-translate="dropzone-subtitle">(html, css, js, or a .zip file)</p>
+                        <p class="small-text" data-translate="dropzone-subtitle">(html, css, js, jsx, tsx, or a .zip file)</p>
                         <p data-translate="dropzone-or">or</p>
                         <button id="browse-btn" class="browse-button" data-translate="browse-button">Browse Files</button>
                     </div>
@@ -59,27 +56,18 @@
             </div>
 
             <div class="step-card" id="step2">
-                <h2 data-translate="step2-title"><span class="step-number">2</span> Configure Your Domain</h2>
+                <h2 data-translate="step2-title"><span class="step-number">2</span> Configure & Launch</h2>
                 <div class="form-group">
-                    <label for="subdomain-name" data-translate="project-name-label">Choose a Project Name (Subdomain)</label>
+                    <label for="subdomain-name" data-translate="project-name-label">Choose a Project Name</label>
                     <input type="text" id="subdomain-name" placeholder="e.g., my-awesome-project" autocomplete="off">
                 </div>
-                <div class="form-group">
-                    <label for="domain-select" data-translate="domain-select-label">Select a Domain</label>
-                    <select id="domain-select"><option value="" data-translate="loading-domains">Loading domains...</option></select>
-                </div>
+                
                 <div class="url-preview">
                     <h4 data-translate="url-preview-title">Your new website URL will be:</h4>
                     <p id="url-preview-text">...</p>
                 </div>
-            </div>
-
-            <div class="step-card" id="step3">
-                 <h2 data-translate="step3-title"><span class="step-number">3</span> Launch Your Website</h2>
-                 <p class="info-text" data-translate="launch-info">
-                    Ready to go live? Clicking deploy will automatically upload your files to Vercel and connect your chosen domain.
-                 </p>
-                 <button id="deploy-btn" class="deploy-button" disabled>
+                
+                 <button id="deploy-btn" class="deploy-button" disabled style="margin-top: 20px;">
                     <span class="button-text" data-translate="deploy-button">Deploy Project</span>
                     <div class="loader" hidden></div>
                 </button>
@@ -88,7 +76,7 @@
         </main>
 
         <footer>
-            <p data-translate="footer-text">&copy; 2025 FishNemo - Deployer. All Righs Reserved</p>
+            <p data-translate="footer-text">&copy; 2024 FishNemo Deployer. Built with ❤️ | <a href="/docs" style="color: var(--secondary-text-color);">API Docs</a></p>
         </footer>
     </div>
     <script src="/script.js"></script>
