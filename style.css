@@ -32,7 +32,6 @@ body {
 .container {
     width: 100%;
     max-width: 700px;
-    animation: fadeIn 1s ease-in-out;
 }
 
 header {
@@ -44,6 +43,10 @@ header h1 {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 10px;
+}
+
+header h1 a {
+    text-decoration: none;
 }
 
 .gradient-text {
@@ -70,10 +73,10 @@ header p {
     opacity: 0;
 }
 
-.step-card:nth-child(1) { animation-delay: 0.2s; }
-.step-card:nth-child(2) { animation-delay: 0.4s; }
-.step-card:nth-child(3) { animation-delay: 0.6s; }
-
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .step-card:hover {
     box-shadow: 0 0 25px rgba(79, 70, 229, 0.2);
@@ -170,7 +173,6 @@ header p {
     display: flex;
     align-items: center;
     gap: 10px;
-    animation: fadeInList 0.5s ease forwards;
 }
 
 .form-group {
@@ -243,21 +245,17 @@ input[type="text"]:focus, select:focus {
     font-weight: 600;
     font-family: var(--font-family);
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.3s, background-image 0.3s, background-color 0.3s;
+    transition: transform 0.2s, box-shadow 0.3s, background-color 0.3s;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
     position: relative;
+    overflow: hidden;
 }
 
-.deploy-button .button-text {
-    transition: opacity 0.2s;
-}
-
-.deploy-button:disabled:not(.loading) {
+.deploy-button:disabled {
     background: var(--border-color);
-    background-image: none;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -268,16 +266,23 @@ input[type="text"]:focus, select:focus {
     box-shadow: 0 10px 20px rgba(236, 72, 153, 0.2);
 }
 
-.deploy-button.loading {
-    cursor: wait;
+.deploy-button .loader {
+    display: none; /* Sembunyikan loader secara default */
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    animation: rotation 1s linear infinite;
 }
 
 .deploy-button.loading .button-text {
     opacity: 0;
+    transition: opacity 0.2s ease-in-out;
 }
 
 .deploy-button.loading .loader {
-    opacity: 1;
+    display: block; /* Tampilkan loader saat loading */
     position: absolute;
 }
 
@@ -309,18 +314,6 @@ input[type="text"]:focus, select:focus {
     text-decoration: underline;
 }
 
-
-.loader {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #fff;
-    border-bottom-color: transparent;
-    border-radius: 50%;
-    display: inline-block;
-    box-sizing: border-box;
-    animation: rotation 1s linear infinite;
-}
-
 footer {
     text-align: center;
     margin-top: 40px;
@@ -328,60 +321,17 @@ footer {
     font-size: 0.9rem;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeInList {
-    from { opacity: 0; transform: translateX(-10px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
 @keyframes rotation {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
 
-.fas {
-    font-family: "Font Awesome 5 Free" !important;
-    font-weight: 900;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.preview-button-container {
-    margin-top: 20px;
-    text-align: right;
-}
-
-.preview-button {
-    background: none;
-    border: 1px solid var(--border-color);
-    color: var(--primary-text-color);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: var(--font-family);
-    font-weight: 500;
-    transition: background-color 0.3s, color 0.3s, transform 0.2s;
-}
-
-.preview-button:hover:not(:disabled) {
-    background-color: #4f46e5;
-    color: white;
-    border-color: #4f46e5;
-    transform: translateY(-2px);
-}
-
-.preview-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
+/* Music Control */
 #music-control {
     position: fixed;
     top: 20px;
@@ -398,14 +348,70 @@ footer {
     z-index: 1000;
     transition: all 0.3s ease;
 }
-
 #music-control:hover {
     transform: scale(1.1);
     box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
 }
-
 #music-control svg {
     width: 20px;
     height: 20px;
     color: var(--primary-text-color);
+}
+
+/* Language Globe Dropdown */
+#lang-globe-container {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+}
+#lang-globe-btn {
+    width: 40px;
+    height: 40px;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--primary-text-color);
+    font-size: 1.2rem;
+}
+#lang-globe-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+}
+#lang-dropdown {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 5px;
+    display: none;
+    min-width: 150px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+#lang-dropdown button {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--secondary-text-color);
+    padding: 10px 15px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    font-family: var(--font-family);
+}
+#lang-dropdown button:hover {
+    background-color: var(--bg-color);
+    color: var(--primary-text-color);
+}
+#lang-dropdown button.active {
+    color: #a5b4fc;
+    font-weight: 600;
 }
