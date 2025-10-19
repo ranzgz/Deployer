@@ -97,7 +97,11 @@ export default async function handler(req, res) {
         const deployData = await deployResponse.json();
         if (!deployResponse.ok) throw new Error(`Vercel Deploy Error: ${deployData.error?.message}`);
         
-        const finalUrl = deployData.url;
+        // --- PERBAIKAN PENGAMBILAN URL PUBLIK ---
+        // Cari URL di array 'alias' yang tidak mengandung ID unik Vercel
+        const publicAlias = deployData.alias.find(alias => !alias.includes(deployData.creator.uid));
+        // Jika tidak ketemu, gunakan URL default dari Vercel sebagai fallback
+        const finalUrl = publicAlias || deployData.url;
         
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
             const message = `🚀 *New Deployment!* 🚀\n\n*Project:* \`${projectName}\`\n*URL:* [https://${finalUrl}](https://${finalUrl})`;
