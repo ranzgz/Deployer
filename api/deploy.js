@@ -97,13 +97,11 @@ export default async function handler(req, res) {
         const deployData = await deployResponse.json();
         if (!deployResponse.ok) throw new Error(`Vercel Deploy Error: ${deployData.error?.message}`);
         
-        // --- PERBAIKAN PENGAMBILAN URL PUBLIK ---
-        // URL publik yang bersih adalah alias yang sama dengan nama proyek.
-        const expectedPublicUrl = `${projectName}.vercel.app`;
-        const publicAlias = deployData.alias.find(alias => alias === expectedPublicUrl);
-        
-        // Gunakan alias publik jika ditemukan, jika tidak, gunakan URL default sebagai fallback yang aman.
-        const finalUrl = publicAlias || deployData.url;
+        // --- PERBAIKAN FINAL PENGAMBILAN URL PUBLIK ---
+        // Vercel API v13 mengembalikan URL publik yang benar di properti 'url'
+        // Prefix unik ditambahkan oleh Vercel jika nama proyek sudah ada di akun lain.
+        // URL yang dikembalikan di 'url' adalah URL yang bisa diakses publik.
+        const finalUrl = deployData.url;
         
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
             const message = `🚀 *New Deployment!* 🚀\n\n*Project:* \`${projectName}\`\n*URL:* [https://${finalUrl}](https://${finalUrl})`;
