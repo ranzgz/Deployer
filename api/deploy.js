@@ -1,4 +1,4 @@
-// /api/deploy.js (Lengkap dengan perbaikan final untuk URL Publik)
+// /api/deploy.js (Lengkap dengan perbaikan final untuk URL Publik - v2)
 
 import formidable from 'formidable';
 import fs from 'fs';
@@ -92,16 +92,20 @@ export default async function handler(req, res) {
         const deployResponse = await fetch(vercelApiUrl, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: projectName, files: vercelFilesPayload, projectSettings: { framework: null }, production: true }),
+            // --- PERBAIKAN DI SINI: Menghapus properti 'production' ---
+            body: JSON.stringify({ 
+                name: projectName, 
+                files: vercelFilesPayload, 
+                projectSettings: { framework: null }
+            }),
         });
         const deployData = await deployResponse.json();
         if (!deployResponse.ok) throw new Error(`Vercel Deploy Error: ${deployData.error?.message}`);
         
-        const deploymentId = deployData.id; // ID dari deployment yang baru dibuat
-        const finalUrl = `${projectName}.vercel.app`; // URL publik yang kita inginkan
+        const deploymentId = deployData.id;
+        const finalUrl = `${projectName}.vercel.app`;
 
-        // --- LANGKAH KRUSIAL BARU: Membuat Alias Produksi ---
-        // Memberitahu Vercel untuk mengarahkan URL publik ke deployment yang baru kita buat.
+        // --- Langkah Krusial: Membuat Alias Produksi ---
         console.log(`Assigning production alias "${finalUrl}" to deployment ID "${deploymentId}"...`);
         const aliasApiUrl = VERCEL_TEAM_ID 
             ? `https://api.vercel.com/v2/deployments/${deploymentId}/aliases?teamId=${VERCEL_TEAM_ID}`
@@ -120,7 +124,6 @@ export default async function handler(req, res) {
 
         if (!aliasResponse.ok) {
             const aliasError = await aliasResponse.json();
-            // Jika alias sudah ada, itu bukan error fatal. Kita tetap lanjutkan.
             if (aliasError.error?.code !== 'alias_in_use') {
                 throw new Error(`Vercel Alias Error: ${aliasError.error?.message}`);
             }
