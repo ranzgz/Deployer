@@ -97,26 +97,13 @@ export default async function handler(req, res) {
         const deployData = await deployResponse.json();
         if (!deployResponse.ok) throw new Error(`Vercel Deploy Error: ${deployData.error?.message}`);
         
-        let publicVercelAppUrl = null;
-        if (deployData.alias && Array.isArray(deployData.alias)) {
-            // Prioritize finding a clean .vercel.app alias
-            publicVercelAppUrl = deployData.alias.find(alias => 
-                alias.endsWith('.vercel.app') && 
-                !alias.includes(deployData.creator.uid) && // Exclude owner-specific aliases
-                alias !== deployData.url // Exclude the internal deployment URL
-            );
-
-            // If a clean one isn't found, try to find any .vercel.app alias that's not the internal URL
-            if (!publicVercelAppUrl) {
-                publicVercelAppUrl = deployData.alias.find(alias => 
-                    alias.endsWith('.vercel.app') && 
-                    alias !== deployData.url
-                );
-            }
-        }
+        // --- PERBAIKAN PENGAMBILAN URL PUBLIK ---
+        // URL publik yang bersih adalah alias yang sama dengan nama proyek.
+        const expectedPublicUrl = `${projectName}.vercel.app`;
+        const publicAlias = deployData.alias.find(alias => alias === expectedPublicUrl);
         
-        // Fallback to deployData.url if no suitable public alias is found
-        const finalUrl = publicVercelAppUrl || deployData.url;
+        // Gunakan alias publik jika ditemukan, jika tidak, gunakan URL default sebagai fallback yang aman.
+        const finalUrl = publicAlias || deployData.url;
         
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
             const message = `🚀 *New Deployment!* 🚀\n\n*Project:* \`${projectName}\`\n*URL:* [https://${finalUrl}](https://${finalUrl})`;

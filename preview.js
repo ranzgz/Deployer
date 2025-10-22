@@ -21,62 +21,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             );
 
-            const htmlFile = files.find(file => file.name.toLowerCase().endsWith('index.html'));
+            const fileMap = new Map(files.map(file => [file.name, file]));
+            const blobUrlMap = new Map();
+
+            const htmlFile = fileMap.get('index.html');
             if (!htmlFile) {
                 throw new Error("An 'index.html' file is required for the preview.");
             }
 
-            statusElement.textContent = "Transpiling scripts (JSX/TSX)...";
-            let htmlContent = await htmlFile.text();
+            statusElement.textContent = "Processing assets (CSS, JS, JSX, TSX)...";
             
-            const stylesToInject = [];
-            const scriptsToInject = [];
-
+            // 1. Buat Blob URL untuk semua aset non-HTML terlebih dahulu
             for (const file of files) {
+                if (file.name.toLowerCase() === 'index.html') continue;
+
+                let content = await file.arrayBuffer();
+                let type = file.type;
+
                 const fileName = file.name.toLowerCase();
-                
-                if (fileName.endsWith('.css')) {
-                    const cssContent = await file.text();
-                    stylesToInject.push(`<style data-filename="${file.name}">${cssContent}</style>`);
-                } else if (fileName.endsWith('.js') || fileName.endsWith('.jsx') || fileName.endsWith('.ts') || fileName.endsWith('.tsx')) {
-                    let scriptContent = await file.text();
+                if (fileName.endsWith('.js') || fileName.endsWith('.jsx') || fileName.endsWith('.ts') || fileName.endsWith('.tsx')) {
+                    type = 'application/javascript';
                     try {
+                        const rawContent = await file.text();
                         const transforms = ['typescript', 'jsx'];
-                        if (fileName.endsWith('.js')) {
-                            // Untuk file .js biasa, hanya transpilasi jsx jika ada
-                            scriptContent = Sucrase.transform(scriptContent, { transforms: ['jsx'] }).code;
-                        } else {
-                            // Untuk lainnya, transpilasi keduanya
-                            scriptContent = Sucrase.transform(scriptContent, { transforms }).code;
-                        }
-                        scriptsToInject.push(`<script type="module" data-filename="${file.name}">${scriptContent}</script>`);
+                        const transformedCode = Sucrase.transform(rawContent, { transforms }).code;
+                        content = new TextEncoder().encode(transformedCode);
                     } catch (e) {
                         console.error(`Error transpiling ${file.name}:`, e);
-                        // Tambahkan script yang menampilkan error di console iframe
-                        scriptsToInject.push(`<script>console.error("Failed to transpile ${file.name}: ${e.message.replace(/"/g, '\\"')}");</script>`);
+                        const errorScript = `console.error("Failed to transpile ${file.name}: ${e.message.replace(/"/g, '\\"')}");`;
+                        content = new TextEncoder().encode(errorScript);
                     }
                 }
-            }
-            
-            statusElement.textContent = "Injecting assets and rendering...";
-
-            // Injeksi styles ke dalam <head>
-            const headEndTag = '</head>';
-            if (htmlContent.includes(headEndTag)) {
-                htmlContent = htmlContent.replace(headEndTag, `${stylesToInject.join('\n')}${headEndTag}`);
-            } else {
-                htmlContent += stylesToInject.join('\n');
-            }
-            
-            // Injeksi scripts ke akhir <body>
-            const bodyEndTag = '</body>';
-            if (htmlContent.includes(bodyEndTag)) {
-                htmlContent = htmlContent.replace(bodyEndTag, `${scriptsToInject.join('\n')}${bodyEndTag}`);
-            } else {
-                htmlContent += scriptsToInject.join('\n');
+                
+                const blob = new Blob([content], { type });
+                blobUrlMap.set(file.name, URL.createObjectURL(blob));
             }
 
-            previewFrame.srcdoc = htmlContent;
+            // 2. Modifikasi HTML untuk menunjuk ke Blob URL
+            statusElement.textContent = "Building main document...";
+            let htmlContent = await htmlFile.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+
+            // Ganti semua path relatif (src, href) dengan Blob URL
+            doc.querySelectorAll('[src], [href]').forEach(el => {
+                const attribute = el.hasAttribute('src') ? 'src' : 'href';
+                const path = el.getAttribute(attribute);
+                
+                // Hanya ganti path relatif, bukan URL absolut
+                if (path && !path.startsWith('http') && !path.startsWith('//')) {
+                    const cleanPath = path.startsWith('./') ? path.substring(2) : path;
+                    if (blobUrlMap.has(cleanPath)) {
+                        el.setAttribute(attribute, blobUrlMap.get(cleanPath));
+                    }
+                }
+            });
+
+            const finalHtml = new XMLSerializer().serializeToString(doc);
+            const finalHtmlBlob = new Blob([finalHtml], { type: 'text/html' });
+            
+            // 3. Render iframe
+            previewFrame.src = URL.createObjectURL(finalHtmlBlob);
             statusElement.textContent = "Preview rendered successfully!";
 
         } catch (error) {
@@ -85,6 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
             previewFrame.srcdoc = `<html><body><h2 style="color: red;">Error Rendering Preview</h2><pre>${error.message}</pre></body></html>`;
         } finally {
             sessionStorage.removeItem('previewFiles');
+        }
+    };
+
+    previewFrame.onload = () => {
+        // Setelah iframe dimuat, kita bisa mencabut semua Blob URL untuk membebaskan memori
+        if (previewFrame.src.startsWith('blob:')) {
+            URL.revokeObjectURL(previewFrame.src);
         }
     };
 
