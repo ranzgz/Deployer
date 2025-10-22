@@ -1,4 +1,4 @@
-// /api/deploy.js
+// /api/deploy.js (Lengkap dengan perbaikan final untuk URL Publik)
 
 import formidable from 'formidable';
 import fs from 'fs';
@@ -92,16 +92,42 @@ export default async function handler(req, res) {
         const deployResponse = await fetch(vercelApiUrl, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: projectName, files: vercelFilesPayload, projectSettings: { framework: null } }),
+            body: JSON.stringify({ name: projectName, files: vercelFilesPayload, projectSettings: { framework: null }, production: true }),
         });
         const deployData = await deployResponse.json();
         if (!deployResponse.ok) throw new Error(`Vercel Deploy Error: ${deployData.error?.message}`);
         
-        // --- PERBAIKAN FINAL PENGAMBILAN URL PUBLIK ---
-        // Vercel API v13 mengembalikan URL publik yang benar di properti 'url'
-        // Prefix unik ditambahkan oleh Vercel jika nama proyek sudah ada di akun lain.
-        // URL yang dikembalikan di 'url' adalah URL yang bisa diakses publik.
-        const finalUrl = deployData.url;
+        const deploymentId = deployData.id; // ID dari deployment yang baru dibuat
+        const finalUrl = `${projectName}.vercel.app`; // URL publik yang kita inginkan
+
+        // --- LANGKAH KRUSIAL BARU: Membuat Alias Produksi ---
+        // Memberitahu Vercel untuk mengarahkan URL publik ke deployment yang baru kita buat.
+        console.log(`Assigning production alias "${finalUrl}" to deployment ID "${deploymentId}"...`);
+        const aliasApiUrl = VERCEL_TEAM_ID 
+            ? `https://api.vercel.com/v2/deployments/${deploymentId}/aliases?teamId=${VERCEL_TEAM_ID}`
+            : `https://api.vercel.com/v2/deployments/${deploymentId}/aliases`;
+
+        const aliasResponse = await fetch(aliasApiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${VERCEL_API_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                alias: finalUrl
+            })
+        });
+
+        if (!aliasResponse.ok) {
+            const aliasError = await aliasResponse.json();
+            // Jika alias sudah ada, itu bukan error fatal. Kita tetap lanjutkan.
+            if (aliasError.error?.code !== 'alias_in_use') {
+                throw new Error(`Vercel Alias Error: ${aliasError.error?.message}`);
+            }
+            console.warn(`Alias "${finalUrl}" was already in use. It should now point to the new deployment.`);
+        } else {
+            console.log("Production alias assigned successfully.");
+        }
         
         if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
             const message = `🚀 *New Deployment!* 🚀\n\n*Project:* \`${projectName}\`\n*URL:* [https://${finalUrl}](https://${finalUrl})`;
