@@ -1,4 +1,34 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "/pages/admin.html"
+    },
+    {
+      "source": "/deploy",
+      "destination": "/pages/deploy.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/pages/docs.html"
+    },
+    {
+      "source": "/preview",
+      "destination": "/pages/preview.html"
+    },
+    {
+      "source": "/admin.js",
+      "destination": "/js/admin.js"
+    },
+    {
+      "source": "/preview.js",
+      "destination": "/js/preview.js"
+    },
+    {
+      "source": "/script.js",
+      "destination": "/js/script.js"
+    }
+  ]
 }

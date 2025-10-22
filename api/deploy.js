@@ -1,5 +1,3 @@
-// /api/deploy.js (Lengkap dengan perbaikan final untuk URL Publik - v2)
-
 import formidable from 'formidable';
 import fs from 'fs';
 import Filter from 'bad-words';
