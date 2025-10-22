@@ -16,7 +16,7 @@ const originalTexts = {};
 function queryAndStoreOriginalTexts() {
     document.querySelectorAll('[data-translate]').forEach(el => {
         const key = el.dataset.translate;
-        originalTexts[key] = el.innerHTML; // Simpan teks HTML asli
+        originalTexts[key] = el.textContent; // Simpan teks HTML asli
     });
 }
 
@@ -44,7 +44,6 @@ async function translateAllElements(targetLang) {
                 q: textsToTranslate,
                 source: 'en',
                 target: targetLang,
-                format: 'html'
             }),
             headers: { 'Content-Type': 'application/json' }
         });
@@ -53,7 +52,7 @@ async function translateAllElements(targetLang) {
         const { translatedText } = await response.json();
 
         elementsToTranslate.forEach((el, index) => {
-            el.innerHTML = translatedText[index];
+            el.textContent = translatedText[index];
         });
 
     } catch (error) {
