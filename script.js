@@ -253,7 +253,7 @@ function initializeDeployPageScripts() {
             const response = await fetch('/api/deploy', { method: 'POST', body: formData });
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
-            showStatus(`Success! Your site is live at: <a href="https://${projectName}.vercel.app" target="_blank">${projectName}.vercel.app</a>`, 'success');
+            showStatus(`Success! Your site is live at: <a href="https://${result.finalUrl}" target="_blank">${result.finalUrl}</a>`, 'success');
         } catch (error) {
             showStatus(`Error: ${error.message}`, 'error');
         } finally {
