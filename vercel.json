@@ -12,7 +12,7 @@
     },
     {
       "source": "/docs",
-      "destination": "/pages/docs.html"
+      "destination": "/page/docs.html"
     },
     {
       "source": "/preview",
