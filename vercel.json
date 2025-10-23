@@ -4,19 +4,19 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "/page/admin.html"
+      "destination": "/pages/admin.html"
     },
     {
       "source": "/deploy",
-      "destination": "/page/deploy.html"
+      "destination": "/pages/deploy.html"
     },
     {
       "source": "/docs",
-      "destination": "/page/docs.html"
+      "destination": "/pages/docs.html"
     },
     {
       "source": "/preview",
-      "destination": "/page/preview.html"
+      "destination": "/pages/preview.html"
     },
     {
       "source": "/admin.js",
