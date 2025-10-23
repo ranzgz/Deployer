@@ -1,4 +1,4 @@
-// /api/deploy.js (Lengkap dengan Polling Status Deployment yang Dikembalikan)
+// /api/deploy.js (Lengkap dengan penanganan error alias yang lebih baik)
 
 import formidable from 'formidable';
 import fs from 'fs';
@@ -7,8 +7,14 @@ import FormData from 'form-data';
 
 export const config = { api: { bodyParser: false } };
 
-// --- Helper Functions ---
+// --- Helper Functions (Tidak ada perubahan) ---
+async function streamToBuffer(stream) { /* ... */ }
+async function sendTelegramNotification(botToken, chatId, message, file) { /* ... */ }
+function parseFormData(req) { /* ... */ }
+async function prepareFilesForVercel(files) { /* ... */ }
+async function pollForDeploymentReady(deploymentId, vercelToken, teamId) { /* ... */ }
 
+// --- KODE LENGKAP UNTUK HELPER FUNCTIONS ---
 async function streamToBuffer(stream) {
     return new Promise((resolve, reject) => {
         const chunks = [];
@@ -65,10 +71,9 @@ async function prepareFilesForVercel(files) {
     return payload;
 }
 
-// --- FUNGSI POLLING YANG DIKEMBALIKAN ---
 async function pollForDeploymentReady(deploymentId, vercelToken, teamId) {
-    const maxRetries = 40; // Coba selama 40 * 3 detik = 120 detik (2 menit)
-    const delay = 3000; // Jeda 3 detik
+    const maxRetries = 40;
+    const delay = 3000;
     const apiUrl = teamId
         ? `https://api.vercel.com/v13/deployments/${deploymentId}?teamId=${teamId}`
         : `https://api.vercel.com/v13/deployments/${deploymentId}`;
@@ -78,30 +83,18 @@ async function pollForDeploymentReady(deploymentId, vercelToken, teamId) {
         const response = await fetch(apiUrl, {
             headers: { 'Authorization': `Bearer ${vercelToken}` }
         });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch deployment status from Vercel.');
-        }
-
+        if (!response.ok) throw new Error('Failed to fetch deployment status from Vercel.');
         const data = await response.json();
         const state = data.readyState;
-
         console.log(`Current deployment state: ${state}`);
-
-        if (state === 'READY') {
-            return; // Sukses! Deployment sudah siap.
-        }
-        if (state === 'ERROR' || state === 'CANCELED') {
-            throw new Error(`Deployment failed with state: ${state}. Reason: ${data.error?.message || 'Unknown'}`);
-        }
-        
+        if (state === 'READY') return;
+        if (state === 'ERROR' || state === 'CANCELED') throw new Error(`Deployment failed with state: ${state}.`);
         await new Promise(res => setTimeout(res, delay));
     }
-
-    throw new Error('Deployment timed out. It took too long to become ready.');
+    throw new Error('Deployment timed out.');
 }
 
-
+// --- Handler Utama ---
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
@@ -143,10 +136,8 @@ export default async function handler(req, res) {
         const deploymentId = deployData.id;
         const finalUrl = `${projectName}.vercel.app`;
 
-        // --- LANGKAH KRUSIAL YANG DIKEMBALIKAN: Menunggu Deployment Selesai ---
         await pollForDeploymentReady(deploymentId, VERCEL_API_TOKEN, VERCEL_TEAM_ID);
 
-        // --- Setelah deployment READY, baru kita buat alias ---
         console.log(`Assigning production alias "${finalUrl}" to deployment ID "${deploymentId}"...`);
         const aliasApiUrl = VERCEL_TEAM_ID 
             ? `https://api.vercel.com/v2/deployments/${deploymentId}/aliases?teamId=${VERCEL_TEAM_ID}`
@@ -163,12 +154,18 @@ export default async function handler(req, res) {
             })
         });
 
+        // --- PERBAIKAN LOGIKA PENANGANAN ALIAS ---
         if (!aliasResponse.ok) {
             const aliasError = await aliasResponse.json();
-            if (aliasError.error?.code !== 'alias_in_use') {
+            const errorCode = aliasError.error?.code;
+            
+            // Anggap sukses jika errornya adalah karena alias sudah ada atau sudah terasosiasi.
+            if (errorCode === 'alias_in_use' || errorCode === 'domain_already_associated') {
+                console.warn(`Ignoring alias error: ${errorCode}. Alias should be correctly pointing to the new deployment.`);
+            } else {
+                // Jika errornya lain, baru kita lempar sebagai error fatal.
                 throw new Error(`Vercel Alias Error: ${aliasError.error?.message}`);
             }
-            console.warn(`Alias "${finalUrl}" was already in use. It should now point to the new deployment.`);
         } else {
             console.log("Production alias assigned successfully.");
         }
