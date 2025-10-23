@@ -1,9 +1,13 @@
+// /api/deploy.js (Lengkap dengan Polling Status Deployment yang Dikembalikan)
+
 import formidable from 'formidable';
 import fs from 'fs';
 import Filter from 'bad-words';
 import FormData from 'form-data';
 
 export const config = { api: { bodyParser: false } };
+
+// --- Helper Functions ---
 
 async function streamToBuffer(stream) {
     return new Promise((resolve, reject) => {
@@ -61,6 +65,43 @@ async function prepareFilesForVercel(files) {
     return payload;
 }
 
+// --- FUNGSI POLLING YANG DIKEMBALIKAN ---
+async function pollForDeploymentReady(deploymentId, vercelToken, teamId) {
+    const maxRetries = 40; // Coba selama 40 * 3 detik = 120 detik (2 menit)
+    const delay = 3000; // Jeda 3 detik
+    const apiUrl = teamId
+        ? `https://api.vercel.com/v13/deployments/${deploymentId}?teamId=${teamId}`
+        : `https://api.vercel.com/v13/deployments/${deploymentId}`;
+
+    for (let i = 0; i < maxRetries; i++) {
+        console.log(`Polling deployment status... Attempt ${i + 1}/${maxRetries}`);
+        const response = await fetch(apiUrl, {
+            headers: { 'Authorization': `Bearer ${vercelToken}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch deployment status from Vercel.');
+        }
+
+        const data = await response.json();
+        const state = data.readyState;
+
+        console.log(`Current deployment state: ${state}`);
+
+        if (state === 'READY') {
+            return; // Sukses! Deployment sudah siap.
+        }
+        if (state === 'ERROR' || state === 'CANCELED') {
+            throw new Error(`Deployment failed with state: ${state}. Reason: ${data.error?.message || 'Unknown'}`);
+        }
+        
+        await new Promise(res => setTimeout(res, delay));
+    }
+
+    throw new Error('Deployment timed out. It took too long to become ready.');
+}
+
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
@@ -90,7 +131,6 @@ export default async function handler(req, res) {
         const deployResponse = await fetch(vercelApiUrl, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}`, 'Content-Type': 'application/json' },
-            // --- PERBAIKAN DI SINI: Menghapus properti 'production' ---
             body: JSON.stringify({ 
                 name: projectName, 
                 files: vercelFilesPayload, 
@@ -103,7 +143,10 @@ export default async function handler(req, res) {
         const deploymentId = deployData.id;
         const finalUrl = `${projectName}.vercel.app`;
 
-        // --- Langkah Krusial: Membuat Alias Produksi ---
+        // --- LANGKAH KRUSIAL YANG DIKEMBALIKAN: Menunggu Deployment Selesai ---
+        await pollForDeploymentReady(deploymentId, VERCEL_API_TOKEN, VERCEL_TEAM_ID);
+
+        // --- Setelah deployment READY, baru kita buat alias ---
         console.log(`Assigning production alias "${finalUrl}" to deployment ID "${deploymentId}"...`);
         const aliasApiUrl = VERCEL_TEAM_ID 
             ? `https://api.vercel.com/v2/deployments/${deploymentId}/aliases?teamId=${VERCEL_TEAM_ID}`
