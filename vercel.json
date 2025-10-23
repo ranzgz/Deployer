@@ -4,11 +4,11 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "/pages/admin.html"
+      "destination": "/page/admin.html"
     },
     {
       "source": "/deploy",
-      "destination": "/pages/deploy.html"
+      "destination": "/page/deploy.html"
     },
     {
       "source": "/docs",
@@ -16,7 +16,7 @@
     },
     {
       "source": "/preview",
-      "destination": "/pages/preview.html"
+      "destination": "/page/preview.html"
     },
     {
       "source": "/admin.js",
