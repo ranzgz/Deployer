@@ -1,4 +1,4 @@
-// /api/deploy.js (Versi Stabil dengan Logika URL yang Benar)
+// /api/deploy.js (Fixed URL Response)
 
 import formidable from 'formidable';
 import fs from 'fs/promises';
@@ -86,20 +86,56 @@ export default async function handler(req, res) {
             throw new Error(`Vercel Deploy Error: ${deployData.error?.message || 'Unknown error'}`);
         }
         
-        // --- LOGIKA PENGAMBILAN URL YANG DISEMPURNAKAN ---
-        // URL yang kita inginkan adalah alias produksi yang sama persis dengan nama proyek.
-        const expectedUrl = `${projectName}.vercel.app`;
+        // --- LOGIKA PENGAMBILAN URL YANG DIPERBAIKI ---
+        let finalUrl;
         
-        // Cari di dalam array alias.
-        const publicAlias = deployData.alias.find(alias => alias === expectedUrl);
+        // Prioritas 1: Cari URL yang mengandung nama project (tanpa awalan yang tidak diinginkan)
+        const projectUrlPattern = new RegExp(`${projectName}[.-].*\.vercel\.app`);
+        const matchingUrl = deployData.alias?.find(alias => projectUrlPattern.test(alias)) || 
+                          projectUrlPattern.test(deployData.url) ? deployData.url : null;
         
-        // Jika alias yang kita harapkan ditemukan, gunakan itu.
-        // Jika tidak (kasus yang sangat jarang), gunakan URL utama dari respons sebagai fallback.
-        const finalUrl = publicAlias || deployData.url;
+        if (matchingUrl) {
+            finalUrl = matchingUrl;
+        } 
+        // Prioritas 2: Gunakan URL langsung dari respons (biasanya format: projectName-xxxx.vercel.app)
+        else if (deployData.url && deployData.url.includes(projectName)) {
+            finalUrl = deployData.url;
+        }
+        // Prioritas 3: Fallback - konstruksi URL manual berdasarkan pola Vercel
+        else {
+            // Biasanya format: projectName-randomstring.vercel.app
+            // Jika deployData.url ada tapi tidak mengandung projectName, kita konstruksi manual
+            const urlParts = deployData.url?.split('.') || [];
+            if (urlParts.length > 0) {
+                const domainPart = urlParts[0];
+                // Hilangkan awalan yang tidak diinginkan seperti "mkbg-"
+                const cleanDomain = domainPart.replace(/^m?k?bg-?/, '');
+                finalUrl = `${projectName}-${cleanDomain}.vercel.app`;
+            } else {
+                // Fallback ultimate
+                finalUrl = deployData.url;
+            }
+        }
 
-        console.log(`Deployment successful. Public URL is: ${finalUrl}`);
+        // Pastikan finalUrl tidak memiliki awalan yang tidak diinginkan
+        if (finalUrl && finalUrl.startsWith('mkbg-')) {
+            finalUrl = finalUrl.replace('mkbg-', '');
+        }
+        if (finalUrl && finalUrl.startsWith('kbg-')) {
+            finalUrl = finalUrl.replace('kbg-', '');
+        }
 
-        res.status(200).json({ message: 'Deployment successful!', finalUrl });
+        console.log(`Deployment successful. Project: ${projectName}, Public URL: ${finalUrl}`);
+
+        res.status(200).json({ 
+            message: 'Deployment successful!', 
+            finalUrl,
+            projectName,
+            vercelResponse: {
+                url: deployData.url,
+                alias: deployData.alias
+            }
+        });
 
     } catch (error) {
         console.error('Full error in /api/deploy handler:', error);
