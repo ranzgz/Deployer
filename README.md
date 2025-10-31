@@ -19,7 +19,6 @@ Sebelum memulai, pastikan Anda memiliki:
 - [Node.js](https://nodejs.org/) dan npm terinstal di komputer Anda
 - Bot Telegram dan API Token dari [@BotFather](https://t.me/BotFather)
 - Chat ID Telegram Anda dari [@userinfobot](https://t.me/userinfobot)
-- API Key dari layanan subdomain Anda (misalnya, `subdo.fishnemo.xyz`)
 
 ## Tutorial Setup
 
@@ -29,8 +28,8 @@ Ikuti langkah-langkah ini untuk men-setup dan mendeploy proyek Anda sendiri.
 
 Clone repository ini ke mesin lokal Anda:
 ```bash
-git clone [URL_REPOSITORY_ANDA]
-cd fishnemo-deployer
+git clone https://github.com/ranzgz/Deployer
+cd Deployer
 ```
 
 ### 2. Instal Dependensi
@@ -55,8 +54,7 @@ Ini adalah langkah paling penting. Anda perlu menambahkan variabel-variabel beri
 | `VERCEL_TEAM_ID`     | (Opsional) Jika proyek berada di dalam tim Vercel, masukkan ID tim.      | `team_xxxxxxxxxxxxxxxx`                    |
 | `ADMIN_PASSWORD`     | Password rahasia yang akan Anda gunakan untuk login ke Admin Dashboard.  | `PasswordSuperRahasia123!@#`               |
 | `TELEGRAM_BOT_TOKEN` | Token API dari bot Telegram Anda yang didapat dari @BotFather.         | `1234567890:ABC-DEF1234ghIkl-zyx57W2v1u`    |
-| `TELEGRAM_CHAT_ID`   | ID chat Telegram Anda (atau grup) untuk menerima notifikasi.           | `987654321`                                |
-| `SUBDOMAKER_API_KEY` | API Key untuk layanan penghapusan subdomain (misal: `subdo.fishnemo.xyz`). | `subdo_apikey_xxxxxxxxxxxx`                |
+| `TELEGRAM_CHAT_ID`   | ID chat Telegram Anda (atau grup) untuk menerima notifikasi.           | `987654321`            
 
 ### 4. Konfigurasi `vercel.json`
 
@@ -99,7 +97,7 @@ Pastikan file `vercel.json` di root proyek Anda ada dan berisi konfigurasi berik
 
 Setelah semua variabel diatur dan kode di-push ke GitHub, Vercel akan secara otomatis mendeploy versi terbaru. Kunjungi URL Vercel Anda untuk melihat landing page.
 
-- **Halaman Deploy:** `https://[nama-proyek-anda].vercel.app/deploy`
-- **Admin Dashboard:** `https://[nama-proyek-anda].vercel.app/admin`
+- **Halaman Deploy:** `https://[nama-proyek-anda].vercel.app/page/deploy`
+- **Admin Dashboard:** `https://[nama-proyek-anda].vercel.app/page/admin`
 
 Proyek Anda sekarang sudah siap digunakan!
