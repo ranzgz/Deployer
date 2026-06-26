@@ -11,7 +11,6 @@ export const config = {
     },
 };
 
-// Asynchronous wrapper for formidable multipart parsing
 function parseFormData(req) {
     return new Promise((resolve, reject) => {
         const uploadDir = os.tmpdir();
@@ -19,7 +18,7 @@ function parseFormData(req) {
             multiples: true,
             uploadDir,
             keepExtensions: true,
-            maxFileSize: 50 * 1024 * 1024, // 50MB safety limit
+            maxFileSize: 100 * 1024 * 1024, // 100MB limit
         });
 
         form.parse(req, (err, fields, files) => {
@@ -29,7 +28,6 @@ function parseFormData(req) {
     });
 }
 
-// Convert files securely into Vercel Deployment-compatible payloads
 async function prepareFilesForVercel(files) {
     const payload = [];
     const processedPaths = new Set();
@@ -38,7 +36,6 @@ async function prepareFilesForVercel(files) {
         if (!file || !file.filepath) continue;
         try {
             const buffer = await fs.readFile(file.filepath);
-            // Ensure proper slashes for cross-platform system uploads
             const normalizedName = (file.originalFilename || path.basename(file.filepath))
                 .replace(/\\/g, '/');
 
@@ -51,14 +48,13 @@ async function prepareFilesForVercel(files) {
                 encoding: 'base64',
             });
         } catch (error) {
-            console.error(`Failed to process static asset matching path: ${file.filepath}`, error);
-            throw new Error(`Failed to process upload: ${file.originalFilename || 'unnamed asset'}`);
+            console.error(`Failed to read file: ${file.filepath}`, error);
+            throw new Error(`Could not process file: ${file.originalFilename}`);
         } finally {
-            // Unlink temporary files on serverless instance to prevent disk leak
             try {
                 await fs.unlink(file.filepath);
             } catch (err) {
-                console.warn(`Temporary storage cleanup warning for ${file.filepath}:`, err);
+                console.warn(`Temp file cleanup warning for ${file.filepath}:`, err);
             }
         }
     }
@@ -73,16 +69,14 @@ export default async function handler(req, res) {
 
     const { VERCEL_API_TOKEN, VERCEL_TEAM_ID } = process.env;
     if (!VERCEL_API_TOKEN) {
-        return res.status(500).json({ message: 'Deployment credentials are misconfigured on Vercel.' });
+        return res.status(500).json({ message: 'Server configuration error: Vercel API token is missing.' });
     }
 
     try {
         const { fields, files } = await parseFormData(req);
-        
         const rawSubdomain = Array.isArray(fields.subdomain) ? fields.subdomain[0] : fields.subdomain;
         const subdomain = rawSubdomain?.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
 
-        // Normalize formidable file payload array
         let rawFiles = files.files;
         if (!rawFiles) {
             rawFiles = [];
@@ -93,13 +87,12 @@ export default async function handler(req, res) {
         const filesForVercel = rawFiles.filter(Boolean);
 
         if (!subdomain || filesForVercel.length === 0) {
-            return res.status(400).json({ message: 'Missing project configuration settings or matching upload files.' });
+            return res.status(400).json({ message: 'Missing project name or files.' });
         }
 
-        // Profanity Check
         const filter = new Filter();
         if (filter.isProfane(subdomain)) {
-            return res.status(400).json({ message: 'The provided project name contains flagged or inappropriate terms.' });
+            return res.status(400).json({ message: 'Project name contains inappropriate language.' });
         }
 
         const vercelFilesPayload = await prepareFilesForVercel(filesForVercel);
@@ -116,9 +109,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 name: subdomain,
                 files: vercelFilesPayload,
-                projectSettings: {
-                    framework: null
-                },
+                projectSettings: { framework: null },
                 target: 'production'
             }),
         });
@@ -126,28 +117,35 @@ export default async function handler(req, res) {
         const deployData = await deployResponse.json();
 
         if (!deployResponse.ok) {
-            console.error("Vercel Gateway Error Payload:", deployData);
+            console.error("Vercel Deploy Error Response:", deployData);
             return res.status(deployResponse.status).json({
-                message: deployData.error?.message || 'Vercel API refused serverless distribution parameters.'
+                message: deployData.error?.message || 'Vercel API error.'
             });
         }
 
-        // Determine the cleanest public URL, prioritizing active aliases
-        let finalUrl = '';
-        if (deployData.alias && deployData.alias.length > 0) {
-            const productionAlias = deployData.alias.find(alias => 
-                !alias.includes('-git-') && 
-                !alias.includes('-prev-') && 
-                alias.endsWith('.vercel.app')
-            );
-            finalUrl = productionAlias || deployData.alias[0];
-        } else if (deployData.url) {
-            finalUrl = deployData.url;
-        } else {
-            finalUrl = `${subdomain}.vercel.app`;
+        // --- SISTEM PENGAMBILAN CANONICAL PRODUCTION DOMAIN ---
+        let finalUrl = `${subdomain}.vercel.app`; // Default fallback
+
+        try {
+            const domainsUrl = VERCEL_TEAM_ID
+                ? `https://api.vercel.com/v9/projects/${subdomain}/domains?teamId=${VERCEL_TEAM_ID}`
+                : `https://api.vercel.com/v9/projects/${subdomain}/domains`;
+
+            const domainsResponse = await fetch(domainsUrl, {
+                headers: { 'Authorization': `Bearer ${VERCEL_API_TOKEN}` }
+            });
+
+            if (domainsResponse.ok) {
+                const domainsData = await domainsResponse.json();
+                if (domainsData.domains && domainsData.domains.length > 0) {
+                    const primaryDomain = domainsData.domains.find(d => !d.redirect) || domainsData.domains[0];
+                    finalUrl = primaryDomain.name;
+                }
+            }
+        } catch (domainError) {
+            console.warn("Could not retrieve production domains via API:", domainError);
         }
 
-        // Strip unexpected prefixes if present
         finalUrl = finalUrl.replace(/^(mkbg-|kbg-)/, '');
 
         return res.status(200).json({
@@ -157,7 +155,7 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('Server side runtime exception inside API module:', error);
-        return res.status(500).json({ message: `Deployment failed: ${error.message}` });
+        console.error('Full error in /api/deploy handler:', error);
+        return res.status(500).json({ message: `Server error: ${error.message}` });
     }
 }
