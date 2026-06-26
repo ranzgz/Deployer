@@ -5,54 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - FishNemo Deployer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .table-link { color: #a5b4fc; text-decoration: none; transition: color 0.2s; }
+        .table-link:hover { color: #6366f1; text-decoration: underline; }
+    </style>
 </head>
 <body class="bg-dark text-white">
-    <div class="container py-5">
-        <header class="d-flex justify-content-between align-items-center mb-4">
+    <div class="container py-5" style="max-width: 900px;">
+        <header class="d-flex justify-content-between align-items-center mb-5">
             <div>
-                <h1><span class="gradient-text">Admin</span> Dashboard</h1>
-                <p class="lead">Manage all deployed projects directly from Vercel.</p>
+                <h1><span class="gradient-text">Admin</span> Console</h1>
+                <p class="lead mb-0">Manage active Vercel static endpoints</p>
             </div>
-            <button id="logout-btn" class="btn btn-outline-light" style="display: none;">Logout</button>
+            <button id="logout-btn" class="btn btn-outline-light px-4" style="display: none; border-radius: 8px;">Logout</button>
         </header>
 
-        <div id="login-section" class="card bg-secondary p-4 text-center">
+        <div id="login-section" class="card p-4 text-center" style="background-color: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: 16px;">
             <div class="card-body">
-                <h2 class="card-title"><i class="fas fa-lock me-2"></i>Admin Login</h2>
-                <div class="form-group my-3">
-                    <input type="password" id="admin-password" class="form-control" placeholder="Enter Admin Password" autocomplete="current-password">
+                <h2 class="card-title mb-4"><i class="fas fa-lock me-2" style="color: #6366f1;"></i>Access Verification</h2>
+                <div class="form-group my-4" style="max-width: 400px; margin: 0 auto;">
+                    <input type="password" id="admin-password" class="form-control" placeholder="Enter System Password" autocomplete="current-password" style="background-color: #09090f; border-color: var(--border-color); color: #fff;">
                 </div>
-                <button id="login-btn" class="btn btn-primary w-100">
-                    <span class="button-text">Login</span>
+                <button id="login-btn" class="deploy-button" style="max-width: 400px; margin: 0 auto;" type="button">
+                    <span class="button-text">Authenticate</span>
                     <div class="loader" hidden></div>
                 </button>
                 <p id="login-error" class="text-danger mt-3" style="display: none;"></p>
             </div>
         </div>
 
-        <div id="dashboard-section" class="card bg-secondary" style="display: none;">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>All Deployments (<span id="total-deploys">0</span>)</h2>
-                <button id="refresh-btn" class="btn btn-outline-light"><i class="fas fa-sync-alt me-2"></i>Refresh</button>
+        <div id="dashboard-section" class="card" style="display: none; background-color: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: 16px;">
+            <div class="card-header d-flex justify-content-between align-items-center py-3" style="border-bottom: 1px solid var(--border-color); background-color: rgba(255,255,255,0.01);">
+                <h2 class="h5 mb-0" style="font-weight: 600;">Active Instances (<span id="total-deploys" style="color: #6366f1;">0</span>)</h2>
+                <button id="refresh-btn" class="btn btn-outline-light btn-sm px-3" style="border-radius: 6px;"><i class="fas fa-sync-alt me-2"></i>Refresh Table</button>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table id="deploys-table" class="table table-dark table-striped">
+                    <table id="deploys-table" class="table table-dark table-hover mb-0" style="background-color: transparent;">
                         <thead>
-                            <tr>
-                                <th>Project Name</th>
-                                <th>Domain</th>
-                                <th>Deployed At</th>
-                                <th>Actions</th>
+                            <tr style="border-color: var(--border-color);">
+                                <th style="background-color: transparent; color: var(--secondary-text-color);">Project Target</th>
+                                <th style="background-color: transparent; color: var(--secondary-text-color);">Endpoint URL</th>
+                                <th style="background-color: transparent; color: var(--secondary-text-color);">Provisioned</th>
+                                <th style="background-color: transparent; color: var(--secondary-text-color);">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="4" class="text-center">Loading data...</td></tr>
+                            <tr><td colspan="4" class="text-center py-4" style="color: var(--secondary-text-color);">Table initializing...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -60,6 +64,5 @@
         </div>
     </div>
     <script src="/admin.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
