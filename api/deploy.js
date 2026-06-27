@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import Filter from 'bad-words';
+import JSZip from 'jszip'; // Menggunakan jszip yang sudah ada di package.json
 
 export const config = {
     api: {
@@ -28,6 +29,7 @@ function parseFormData(req) {
     });
 }
 
+// Handler untuk mengolah file biasa (Non-ZIP)
 async function prepareFilesForVercel(files) {
     const payload = [];
     const processedPaths = new Set();
@@ -51,12 +53,47 @@ async function prepareFilesForVercel(files) {
             console.error(`Failed to read file: ${file.filepath}`, error);
             throw new Error(`Could not process file: ${file.originalFilename}`);
         } finally {
-            try {
-                await fs.unlink(file.filepath);
-            } catch (err) {
-                console.warn(`Temp file cleanup warning for ${file.filepath}:`, err);
-            }
+            try { await fs.unlink(file.filepath); } catch (e) {}
         }
+    }
+    return payload;
+}
+
+// BARU: Handler untuk mengekstrak file ZIP langsung di Backend (Server-Side)
+async function prepareFilesFromZip(zipFile) {
+    const payload = [];
+    try {
+        const buffer = await fs.readFile(zipFile.filepath);
+        const zip = await JSZip.loadAsync(buffer);
+        
+        // Membaca isi ZIP secara asinkronus
+        for (const [relativePath, entry] of Object.entries(zip.files)) {
+            if (entry.dir) continue; // Lewati jika entri adalah folder kosong
+            
+            const fileBuffer = await entry.async('nodebuffer');
+            let normalizedPath = relativePath.replace(/\\/g, '/');
+            
+            // Hapus prefix folder root jika ada bawaan kompresi OS
+            if (normalizedPath.startsWith('/')) {
+                normalizedPath = normalizedPath.substring(1);
+            }
+
+            // Abaikan file sampah sistem operasi (macOS / Windows Metadata)
+            if (normalizedPath.includes('__MACOSX') || normalizedPath.endsWith('.DS_Store')) {
+                continue;
+            }
+
+            payload.push({
+                file: normalizedPath,
+                data: fileBuffer.toString('base64'),
+                encoding: 'base64',
+            });
+        }
+    } catch (error) {
+        console.error("Failed to extract ZIP on server side:", error);
+        throw new Error("Invalid ZIP archive or corrupted file.");
+    } finally {
+        try { await fs.unlink(zipFile.filepath); } catch (e) {}
     }
     return payload;
 }
@@ -95,7 +132,27 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Project name contains inappropriate language.' });
         }
 
-        const vercelFilesPayload = await prepareFilesForVercel(filesForVercel);
+        let vercelFilesPayload = [];
+
+        // Deteksi apakah file yang dikirim adalah ZIP tunggal
+        const isSingleZip = filesForVercel.length === 1 && (
+            filesForVercel[0].originalFilename?.toLowerCase().endsWith('.zip') ||
+            filesForVercel[0].mimetype === 'application/zip'
+        );
+
+        if (isSingleZip) {
+            // Jika ZIP, langsung ekstrak di Backend
+            console.log(`Extracting ZIP package on server-side for: ${subdomain}`);
+            vercelFilesPayload = await prepareFilesFromZip(filesForVercel[0]);
+        } else {
+            // Jika kumpulan file biasa, olah secara normal
+            vercelFilesPayload = await prepareFilesForVercel(filesForVercel);
+        }
+
+        if (vercelFilesPayload.length === 0) {
+            return res.status(400).json({ message: 'No valid files extracted from payload.' });
+        }
+
         const vercelApiUrl = VERCEL_TEAM_ID
             ? `https://api.vercel.com/v13/deployments?teamId=${VERCEL_TEAM_ID}`
             : 'https://api.vercel.com/v13/deployments';
@@ -123,8 +180,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // --- SISTEM PENGAMBILAN CANONICAL PRODUCTION DOMAIN ---
-        let finalUrl = `${subdomain}.vercel.app`; // Default fallback
+        let finalUrl = `${subdomain}.vercel.app`;
 
         try {
             const domainsUrl = VERCEL_TEAM_ID
@@ -143,7 +199,7 @@ export default async function handler(req, res) {
                 }
             }
         } catch (domainError) {
-            console.warn("Could not retrieve production domains via API:", domainError);
+            console.warn("Could not retrieve domains via Vercel API:", domainError);
         }
 
         finalUrl = finalUrl.replace(/^(mkbg-|kbg-)/, '');
